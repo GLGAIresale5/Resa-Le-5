@@ -830,26 +830,26 @@ export default function ReservationsPage() {
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-white truncate">
+                              <span className="text-sm font-semibold text-white truncate">
                                 {res.guest_name}
                               </span>
                               <span className="text-xs">{SOURCE_ICON[res.source] ?? ""}</span>
                             </div>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="text-xs text-zinc-400">{res.time?.slice(0, 5)}</span>
-                              <span className="text-xs text-zinc-600">·</span>
-                              <span className="text-xs text-zinc-400">{res.guest_count} pers.</span>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="text-xs text-zinc-300">{res.time?.slice(0, 5)}</span>
+                              <span className="text-xs text-zinc-500">·</span>
+                              <span className="text-xs text-zinc-300">{res.guest_count} pers.</span>
                               {res.table_id && (
                                 <>
-                                  <span className="text-xs text-zinc-600">·</span>
-                                  <span className="text-xs text-zinc-400">
+                                  <span className="text-xs text-zinc-500">·</span>
+                                  <span className="text-xs text-zinc-300 font-medium">
                                     {tables.find((t) => t.id === res.table_id)?.name ?? ""}
                                   </span>
                                 </>
                               )}
                             </div>
                             {res.notes && (
-                              <p className="text-xs text-zinc-500 mt-1 truncate">{res.notes}</p>
+                              <p className="text-xs text-zinc-400 mt-1 truncate">{res.notes}</p>
                             )}
                           </div>
                           {res.status !== "cancelled" && (
