@@ -243,7 +243,7 @@ export default function FloorPlan({
         const rotation = table.rotation ?? 0;
         const tableW = table.shape === "rectangle" ? table.width * 1.5 : table.width;
         const tableH = table.height;
-        const res = reservations.find((r) => r.table_id === table.id && r.status === "confirmed");
+        const res = reservations.find((r) => r.table_id === table.id && (r.status === "confirmed" || r.status === "pending"));
         // Edit mode only: violet = movable table. View mode: normal status colors, badges only.
         const inMergeGroup = editMode && (table.movable !== false);
         const inProposedGroup = !editMode && proposedGroupSet.has(table.id);
@@ -311,22 +311,46 @@ export default function FloorPlan({
               inProposedGroup={inProposedGroup}
               isDropTarget={isDropTarget}
             />
-            <span
-              className="absolute text-[10px] font-bold text-white pointer-events-none"
-              style={{ transform: `rotate(${-rotation}deg)` }}
-            >
-              {table.name}
-            </span>
-            <span
-              className="absolute -bottom-4 text-[9px] text-zinc-400 pointer-events-none"
-              style={{ transform: `rotate(${-rotation}deg)` }}
-            >
-              {table.capacity}p
-            </span>
-            {!editMode && res && (
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
-                {res.guest_name} · {res.guest_count}p · {res.time}
-              </div>
+            {!editMode && res ? (
+              <>
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+                  style={{ transform: `rotate(${-rotation}deg)` }}
+                >
+                  <span className="text-[9px] font-semibold text-white leading-tight truncate max-w-full px-1">
+                    {(() => {
+                      const parts = res.guest_name.split(" ");
+                      const first = parts[0];
+                      const lastInitial = parts.length > 1 ? parts[parts.length - 1][0] + "." : "";
+                      return `${first} ${lastInitial}`;
+                    })()}
+                  </span>
+                  <span className="text-[8px] text-zinc-300 leading-tight">
+                    {res.guest_count}p · {res.time?.slice(0, 5)}
+                  </span>
+                </div>
+                <span
+                  className="absolute -bottom-4 text-[9px] text-zinc-400 pointer-events-none"
+                  style={{ transform: `rotate(${-rotation}deg)` }}
+                >
+                  {table.name}
+                </span>
+              </>
+            ) : (
+              <>
+                <span
+                  className="absolute text-[10px] font-bold text-white pointer-events-none"
+                  style={{ transform: `rotate(${-rotation}deg)` }}
+                >
+                  {table.name}
+                </span>
+                <span
+                  className="absolute -bottom-4 text-[9px] text-zinc-400 pointer-events-none"
+                  style={{ transform: `rotate(${-rotation}deg)` }}
+                >
+                  {table.capacity}p
+                </span>
+              </>
             )}
           </div>
         );
