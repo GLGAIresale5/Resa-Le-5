@@ -10,6 +10,7 @@ interface ReservationFormProps {
   reservation?: Reservation;  // if set → edit mode
   onSubmit: (data: ReservationCreate) => Promise<void>;
   onCancel: () => void;
+  onCancelReservation?: (reservationId: string) => Promise<void>;
 }
 
 const SOURCE_LABELS: Record<ReservationSource, string> = {
@@ -39,6 +40,7 @@ export default function ReservationForm({
   reservation,
   onSubmit,
   onCancel,
+  onCancelReservation,
 }: ReservationFormProps) {
   const isEdit = !!reservation;
 
@@ -252,7 +254,7 @@ export default function ReservationForm({
           className="flex-1 py-2 rounded text-sm border border-zinc-700 text-zinc-400 hover:border-zinc-600 transition-colors"
           disabled={loading}
         >
-          Annuler
+          Retour
         </button>
         <button
           type="submit"
@@ -262,6 +264,21 @@ export default function ReservationForm({
           {loading ? "Enregistrement..." : isEdit ? "Mettre à jour" : "Confirmer"}
         </button>
       </div>
+
+      {isEdit && onCancelReservation && reservation?.status !== "cancelled" && (
+        <button
+          type="button"
+          onClick={() => {
+            if (confirm("Annuler cette réservation ? Le client sera prévenu.")) {
+              onCancelReservation(reservation!.id);
+            }
+          }}
+          className="w-full py-2 rounded text-sm border border-red-800/50 text-red-400 hover:bg-red-950/30 hover:border-red-700 transition-colors"
+          disabled={loading}
+        >
+          Annuler la réservation
+        </button>
+      )}
     </form>
   );
 }

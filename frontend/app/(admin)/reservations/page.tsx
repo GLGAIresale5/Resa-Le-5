@@ -14,6 +14,7 @@ import {
   updateReservation,
   deleteReservation,
   confirmReservation,
+  cancelReservation,
   updateTable,
   createTable,
   deleteTable,
@@ -791,6 +792,12 @@ export default function ReservationsPage() {
                 reservation={editingReservation ?? undefined}
                 onSubmit={editingReservation ? handleUpdateReservation : handleCreateReservation}
                 onCancel={() => { setShowForm(false); setEditingReservation(null); setSelectedTableId(null); }}
+                onCancelReservation={async (resId) => {
+                  const res = await cancelReservation(resId);
+                  setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
+                  setEditingReservation(null);
+                  setShowForm(false);
+                }}
               />
             </div>
           ) : (

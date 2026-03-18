@@ -458,6 +458,80 @@ async def confirm_reservation(reservation_id: UUID):
     return reservation
 
 
+@router.post("/{reservation_id}/cancel", response_model=Reservation)
+async def cancel_reservation_endpoint(reservation_id: UUID):
+    """Cancel a reservation and notify the guest."""
+    supabase = get_supabase()
+    response = (
+        supabase.table("reservations")
+        .update({"status": "cancelled"})
+        .eq("id", str(reservation_id))
+        .execute()
+    )
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Réservation introuvable")
+
+    reservation = response.data[0]
+    _send_guest_cancellation(reservation)
+    return reservation
+
+
+def _send_guest_cancellation(reservation: dict):
+    """Send cancellation message to the guest — email via Resend."""
+    from core.config import settings
+
+    guest_email = reservation.get("guest_email")
+    guest_name = reservation.get("guest_name", "")
+    first_name = guest_name.split(" ")[0] if guest_name else ""
+    date_raw = reservation.get("date", "")
+    time_raw = (reservation.get("time", "") or "")[:5]
+
+    try:
+        from datetime import datetime as _dt
+        import locale
+        try:
+            locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
+        except Exception:
+            pass
+        d = _dt.strptime(date_raw, "%Y-%m-%d")
+        date_str = d.strftime("%A %d %B %Y").capitalize()
+    except Exception:
+        date_str = date_raw
+
+    if guest_email and settings.resend_api_key:
+        try:
+            import resend
+            resend.api_key = settings.resend_api_key
+
+            html = f"""
+            <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: 0 auto;">
+                <h2 style="color: #1c1917; margin-bottom: 4px;">Réservation annulée</h2>
+                <p style="color: #78716c; margin-top: 0;">Bonjour {first_name},</p>
+                <p style="color: #292524; font-size: 14px; line-height: 1.6;">
+                    Nous sommes désolés de vous informer que votre réservation du
+                    <strong>{date_str}</strong> à <strong>{time_raw}</strong> au restaurant Le 5
+                    a été annulée.
+                </p>
+                <p style="color: #292524; font-size: 14px; line-height: 1.6;">
+                    N'hésitez pas à nous recontacter pour réserver une autre date.<br>
+                    Vous pouvez nous joindre au <strong>01 45 53 00 68</strong> ou réserver en ligne.
+                </p>
+                <p style="color: #a8a29e; font-size: 12px; margin-top: 24px;">
+                    Le 5 — 5 rue du Général Clergerie, 75116 Paris
+                </p>
+            </div>
+            """
+
+            resend.Emails.send({
+                "from": "Le 5 <reservations@glg-ai.com>",
+                "to": [guest_email],
+                "subject": f"Annulation de votre réservation au Le 5 — {date_str}",
+                "html": html,
+            })
+        except Exception:
+            pass
+
+
 def _send_guest_confirmation(reservation: dict):
     """Send confirmation to the guest — email (Resend). SMS can be added later."""
     from core.config import settings
