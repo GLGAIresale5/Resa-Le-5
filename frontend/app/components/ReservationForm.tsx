@@ -49,7 +49,7 @@ export default function ReservationForm({
   const [guestEmail, setGuestEmail] = useState(reservation?.guest_email ?? "");
   const [guestCount, setGuestCount] = useState(reservation?.guest_count ?? 2);
   const [date, setDate] = useState(reservation?.date ?? initialDate ?? "");
-  const [time, setTime] = useState(reservation?.time ?? "19:30");
+  const [time, setTime] = useState((reservation?.time ?? "19:30").slice(0, 5));
   const [duration, setDuration] = useState(reservation?.duration ?? 120);
   const [source, setSource] = useState<ReservationSource>(reservation?.source ?? "phone");
   const [tableId, setTableId] = useState(reservation?.table_id ?? "");
@@ -78,7 +78,7 @@ export default function ReservationForm({
         time,
         duration,
         source,
-        status: "confirmed",
+        status: reservation?.status ?? "confirmed",
         table_id: tableId || null,
         notes: notes.trim() || undefined,
       });
