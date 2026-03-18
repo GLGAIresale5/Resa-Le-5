@@ -53,34 +53,34 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r border-zinc-200 bg-white">
+    <aside className="hidden md:flex h-screen flex-col border-r border-zinc-200 bg-white w-16 lg:w-56 transition-all duration-200">
       {/* Brand */}
-      <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-5">
+      <div className="flex items-center gap-3 border-b border-zinc-100 px-3 lg:px-5 py-5 justify-center lg:justify-start">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900">
           <span className="text-xs font-bold text-white">G</span>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 hidden lg:block">
           <p className="truncate text-sm font-semibold text-zinc-900">GLG AI</p>
           <p className="truncate text-xs text-zinc-400">Le 5</p>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-col gap-0.5 p-3">
+      <nav className="flex flex-col gap-0.5 p-2 lg:p-3">
         {navItems.map((item) => {
           if (item.children) {
             const isGroupActive = item.children.some((c) => pathname.startsWith(c.href));
             return (
               <div key={item.label}>
-                {/* Group label */}
-                <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm ${
+                {/* Group label — icon only on tablet */}
+                <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm justify-center lg:justify-start ${
                   isGroupActive ? "text-zinc-900" : "text-zinc-600"
                 }`}>
                   {item.icon}
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium hidden lg:inline">{item.label}</span>
                 </div>
-                {/* Sub-items */}
-                <div className="ml-4 flex flex-col gap-0.5 border-l border-zinc-100 pl-3">
+                {/* Sub-items — hidden on tablet, visible on desktop */}
+                <div className="hidden lg:flex ml-4 flex-col gap-0.5 border-l border-zinc-100 pl-3">
                   {item.children.map((child) => {
                     const isActive = pathname === child.href || pathname.startsWith(child.href + "/");
                     return (
@@ -98,6 +98,25 @@ export default function Sidebar() {
                     );
                   })}
                 </div>
+                {/* Sub-items — tablet: show first child as link on the icon */}
+                <div className="flex lg:hidden flex-col gap-0.5">
+                  {item.children.map((child) => {
+                    const isActive = pathname === child.href || pathname.startsWith(child.href + "/");
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={`flex items-center justify-center rounded-lg px-1 py-1.5 text-[10px] transition ${
+                          isActive
+                            ? "bg-zinc-900 font-medium text-white"
+                            : "text-zinc-400 hover:bg-zinc-50 hover:text-zinc-900"
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             );
           }
@@ -107,20 +126,19 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.soon ? "#" : item.href}
-              className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition justify-center lg:justify-start ${
                 isActive
                   ? "bg-zinc-900 text-white"
                   : item.soon
                   ? "cursor-default text-zinc-300"
                   : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
               }`}
+              title={item.label}
             >
-              <span className="flex items-center gap-2.5">
-                {item.icon}
-                {item.label}
-              </span>
+              {item.icon}
+              <span className="hidden lg:inline">{item.label}</span>
               {item.soon && (
-                <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+                <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 hidden lg:inline">
                   Bientôt
                 </span>
               )}
@@ -130,8 +148,8 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="mt-auto border-t border-zinc-100 px-5 py-4">
-        <p className="text-xs text-zinc-400">GLG AI — v0.1</p>
+      <div className="mt-auto border-t border-zinc-100 px-3 lg:px-5 py-4">
+        <p className="text-xs text-zinc-400 hidden lg:block">GLG AI — v0.1</p>
       </div>
     </aside>
   );

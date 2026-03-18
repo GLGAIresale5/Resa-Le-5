@@ -48,7 +48,7 @@ export default function AvisPage() {
     <div className="flex flex-col">
       {/* Page header */}
       <header className="border-b border-zinc-200 bg-white">
-        <div className="flex items-center justify-between px-8 py-5">
+        <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-5 gap-3">
           <div>
             <h1 className="text-base font-semibold text-zinc-900">Avis clients</h1>
             <p className="text-xs text-zinc-400">Gérez et répondez aux avis Google, TripAdvisor, TheFork</p>
@@ -77,7 +77,7 @@ export default function AvisPage() {
         </div>
 
         {/* Tabs */}
-        <div className="px-8">
+        <div className="px-4 md:px-8">
           <nav className="flex gap-0">
             {(["pending", "responded"] as Tab[]).map((t) => (
               <button
@@ -102,7 +102,7 @@ export default function AvisPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 px-8 py-8">
+      <main className="flex-1 px-4 md:px-8 py-6 md:py-8">
         {loading && (
           <div className="flex items-center justify-center py-24 text-sm text-zinc-400">
             <svg className="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">

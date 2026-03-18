@@ -166,6 +166,7 @@ export default function ReservationsPage() {
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [editMode, setEditMode] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -297,6 +298,7 @@ export default function ReservationsPage() {
     setSelectedTableId(table.id === selectedTableId ? null : table.id);
     setShowForm(true);
     setEditingReservation(null);
+    setShowPanel(true);
   };
 
   const handleAddPlan = async () => {
@@ -563,19 +565,36 @@ export default function ReservationsPage() {
   return (
     <div className="flex flex-col h-full bg-zinc-900 text-white overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-        <div>
-          <h1 className="text-lg font-semibold">Réservations</h1>
-          <p className="text-xs text-zinc-400 mt-0.5 capitalize">{formatDate(selectedDate)}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-4 text-sm text-zinc-400 mr-2">
-            <span><span className="text-white font-medium">{activeReservations.length}</span> réservations</span>
-            <span><span className="text-white font-medium">{totalCovers}</span> couverts</span>
+      <div className="flex flex-col gap-2 px-3 md:px-6 py-3 md:py-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-base md:text-lg font-semibold">Réservations</h1>
+            <p className="text-xs text-zinc-400 mt-0.5 capitalize">{formatDate(selectedDate)}</p>
           </div>
-
-          {/* Service selector */}
-          <div className="flex items-center gap-0.5 bg-zinc-800 border border-zinc-700 rounded p-0.5">
+          <div className="flex items-center gap-2">
+            <div className="hidden md:flex gap-4 text-sm text-zinc-400 mr-2">
+              <span><span className="text-white font-medium">{activeReservations.length}</span> réservations</span>
+              <span><span className="text-white font-medium">{totalCovers}</span> couverts</span>
+            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-zinc-800 border border-zinc-700 rounded px-2 md:px-3 py-1.5 text-sm text-white focus:outline-none focus:border-zinc-500"
+            />
+            {!editMode && (
+              <button
+                onClick={() => { setShowForm(true); setEditingReservation(null); setSelectedTableId(null); setShowPanel(true); }}
+                className="px-3 py-1.5 rounded text-sm bg-white text-zinc-900 font-medium hover:bg-zinc-100 transition-colors"
+              >
+                +<span className="hidden md:inline"> Réservation</span>
+              </button>
+            )}
+          </div>
+        </div>
+        {/* Second row: service selector + edit button */}
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <div className="flex items-center gap-0.5 bg-zinc-800 border border-zinc-700 rounded p-0.5 shrink-0">
             <button
               onClick={() => setSelectedServiceId(null)}
               className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
@@ -588,7 +607,7 @@ export default function ReservationsPage() {
               <button
                 key={s.id}
                 onClick={() => setSelectedServiceId(s.id)}
-                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${
                   selectedServiceId === s.id ? "bg-zinc-600 text-white" : "text-zinc-400 hover:text-white"
                 }`}
               >
@@ -603,37 +622,29 @@ export default function ReservationsPage() {
               ⚙
             </button>
           </div>
-
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-zinc-500"
-          />
-          <button
-            onClick={() => setEditMode((prev) => !prev)}
-            className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-              editMode
-                ? "bg-blue-600 border-blue-500 text-white"
-                : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600"
-            }`}
-          >
-            {editMode ? "Quitter l'édition" : "Éditer le plan"}
-          </button>
-          {!editMode && (
+          {/* Mobile stats */}
+          <div className="flex md:hidden gap-3 text-xs text-zinc-400 shrink-0">
+            <span><span className="text-white font-medium">{activeReservations.length}</span> résa</span>
+            <span><span className="text-white font-medium">{totalCovers}</span> couv.</span>
+          </div>
+          <div className="ml-auto shrink-0">
             <button
-              onClick={() => { setShowForm(true); setEditingReservation(null); setSelectedTableId(null); }}
-              className="px-3 py-1.5 rounded text-sm bg-white text-zinc-900 font-medium hover:bg-zinc-100 transition-colors"
+              onClick={() => setEditMode((prev) => !prev)}
+              className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                editMode
+                  ? "bg-blue-600 border-blue-500 text-white"
+                  : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600"
+              }`}
             >
-              + Réservation
+              {editMode ? "Quitter" : "Éditer"}
             </button>
-          )}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* LEFT: Floor plan */}
-        <div className="flex flex-col flex-1 min-w-0 p-4 gap-3">
+        <div className="flex flex-col flex-1 min-w-0 p-2 md:p-4 gap-3">
           {/* Plan selector tabs */}
           <div className="flex items-end gap-0 border-b border-zinc-800 pb-0">
             {floorPlans.map((plan) => {
@@ -781,8 +792,30 @@ export default function ReservationsPage() {
           </div>
         </div>
 
-        {/* RIGHT: List + form */}
-        <div className="w-80 border-l border-zinc-800 flex flex-col overflow-hidden">
+        {/* Floating button to toggle panel on tablet/mobile */}
+        <button
+          onClick={() => setShowPanel((v) => !v)}
+          className="lg:hidden absolute bottom-4 right-4 z-40 flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 shadow-lg transition hover:bg-zinc-100"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+          </svg>
+          {activeReservations.length} résa
+        </button>
+
+        {/* Backdrop for mobile panel */}
+        {showPanel && (
+          <div className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setShowPanel(false)} />
+        )}
+
+        {/* RIGHT: List + form — always visible on desktop, drawer on tablet/mobile */}
+        <div className={`
+          lg:relative lg:translate-x-0 lg:w-80
+          fixed top-0 right-0 bottom-0 z-50 w-80 max-w-[85vw]
+          transform transition-transform duration-200 ease-out
+          ${showPanel ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
+          border-l border-zinc-800 bg-zinc-900 flex flex-col overflow-hidden
+        `}>
           {showForm || editingReservation ? (
             <div className="flex-1 overflow-y-auto p-4">
               <ReservationForm
@@ -833,7 +866,7 @@ export default function ReservationsPage() {
                       >
                         <div
                           className="flex items-start justify-between gap-2 cursor-pointer"
-                          onClick={() => { setEditingReservation(res); setShowForm(false); }}
+                          onClick={() => { setEditingReservation(res); setShowForm(false); setShowPanel(true); }}
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">

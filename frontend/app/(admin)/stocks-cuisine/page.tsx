@@ -347,7 +347,7 @@ function TabBar({ tab, setTab, warningCount }: { tab: Tab; setTab: (t: Tab) => v
     { key: "agent", label: "Contexte service" },
   ];
   return (
-    <div className="flex gap-0 border-b border-zinc-200 bg-white px-8">
+    <div className="flex gap-0 border-b border-zinc-200 bg-white px-4 md:px-8">
       {tabs.map((t) => (
         <button key={t.key} onClick={() => setTab(t.key)}
           className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${tab === t.key ? "border-zinc-900 text-zinc-900" : "border-transparent text-zinc-500 hover:text-zinc-700"}`}>
@@ -871,7 +871,7 @@ function AgentTab({ restaurantId }: { restaurantId: string }) {
 
   return (
     <div className="flex h-[calc(100vh-160px)] flex-col">
-      <div className="border-b border-zinc-100 bg-zinc-50 px-8 py-3">
+      <div className="border-b border-zinc-100 bg-zinc-50 px-4 md:px-8 py-3">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium text-zinc-500">Couverts</label>
@@ -888,7 +888,7 @@ function AgentTab({ restaurantId }: { restaurantId: string }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900">
@@ -926,7 +926,7 @@ function AgentTab({ restaurantId }: { restaurantId: string }) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-zinc-200 bg-white px-8 py-4">
+      <div className="border-t border-zinc-200 bg-white px-4 md:px-8 py-4">
         <div className="flex items-end gap-3">
           <textarea rows={1} value={input} onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
@@ -997,7 +997,7 @@ export default function StocksCuisinePage() {
 
   return (
     <div className="flex flex-col">
-      <header className="border-b border-zinc-200 bg-white px-8 py-5">
+      <header className="border-b border-zinc-200 bg-white px-4 md:px-8 py-5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-zinc-900">Stocks Cuisine</h1>

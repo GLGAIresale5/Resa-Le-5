@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { RestaurantTable, Reservation } from "../types";
 
 const GRID_SIZE = 1; // % — snap grid resolution (1% = 100×100 grid)
+const REFERENCE_WIDTH = 800; // px — reference container width for table sizing
 
 function snapToGrid(val: number): number {
   return Math.round(val / GRID_SIZE) * GRID_SIZE;
@@ -128,6 +129,19 @@ export default function FloorPlan({
   const [draggingTableId, setDraggingTableId] = useState<string | null>(null);
   const [localPositions, setLocalPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [scaleFactor, setScaleFactor] = useState(1);
+
+  // Track container width to scale table sizes proportionally
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? REFERENCE_WIDTH;
+      setScaleFactor(Math.min(1, w / REFERENCE_WIDTH));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const proposedGroupSet = new Set(proposedGroupIds);
 
@@ -241,8 +255,8 @@ export default function FloorPlan({
         const isSelected = selectedTableId === table.id;
         const isDragging = draggingTableId === table.id;
         const rotation = table.rotation ?? 0;
-        const tableW = table.shape === "rectangle" ? table.width * 1.5 : table.width;
-        const tableH = table.height;
+        const tableW = (table.shape === "rectangle" ? table.width * 1.5 : table.width) * scaleFactor;
+        const tableH = table.height * scaleFactor;
         const res = reservations.find((r) => r.table_id === table.id && (r.status === "confirmed" || r.status === "pending"));
         // Edit mode only: violet = movable table. View mode: normal status colors, badges only.
         const inMergeGroup = editMode && (table.movable !== false);
@@ -302,8 +316,8 @@ export default function FloorPlan({
           >
             <TableShape
               shape={table.shape}
-              width={table.width}
-              height={table.height}
+              width={table.width * scaleFactor}
+              height={table.height * scaleFactor}
               status={status}
               selected={isSelected}
               editMode={editMode}
@@ -315,9 +329,9 @@ export default function FloorPlan({
               <>
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
-                  style={{ transform: `rotate(${-rotation}deg)` }}
+                  style={{ transform: `rotate(${-rotation}deg)`, fontSize: Math.max(7, 9 * scaleFactor) }}
                 >
-                  <span className="text-[9px] font-semibold text-white leading-tight truncate max-w-full px-1">
+                  <span className="font-semibold text-white leading-tight truncate max-w-full px-1">
                     {(() => {
                       const parts = res.guest_name.split(" ");
                       const first = parts[0];
@@ -325,13 +339,13 @@ export default function FloorPlan({
                       return `${first} ${lastInitial}`;
                     })()}
                   </span>
-                  <span className="text-[8px] text-zinc-300 leading-tight">
+                  <span className="text-zinc-300 leading-tight" style={{ fontSize: Math.max(6, 8 * scaleFactor) }}>
                     {res.guest_count}p · {res.time?.slice(0, 5)}
                   </span>
                 </div>
                 <span
-                  className="absolute -bottom-4 text-[9px] text-zinc-400 pointer-events-none"
-                  style={{ transform: `rotate(${-rotation}deg)` }}
+                  className="absolute text-zinc-400 pointer-events-none"
+                  style={{ transform: `rotate(${-rotation}deg)`, fontSize: Math.max(7, 9 * scaleFactor), bottom: -4 * scaleFactor }}
                 >
                   {table.name}
                 </span>
@@ -339,14 +353,14 @@ export default function FloorPlan({
             ) : (
               <>
                 <span
-                  className="absolute text-[10px] font-bold text-white pointer-events-none"
-                  style={{ transform: `rotate(${-rotation}deg)` }}
+                  className="absolute font-bold text-white pointer-events-none"
+                  style={{ transform: `rotate(${-rotation}deg)`, fontSize: Math.max(7, 10 * scaleFactor) }}
                 >
                   {table.name}
                 </span>
                 <span
-                  className="absolute -bottom-4 text-[9px] text-zinc-400 pointer-events-none"
-                  style={{ transform: `rotate(${-rotation}deg)` }}
+                  className="absolute text-zinc-400 pointer-events-none"
+                  style={{ transform: `rotate(${-rotation}deg)`, fontSize: Math.max(7, 9 * scaleFactor), bottom: -4 * scaleFactor }}
                 >
                   {table.capacity}p
                 </span>

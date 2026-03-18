@@ -1,4 +1,5 @@
 import Sidebar from "../components/Sidebar";
+import BottomNav from "../components/BottomNav";
 
 export default function AdminLayout({
   children,
@@ -8,9 +9,10 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-zinc-50">
       <Sidebar />
-      <div className="flex min-h-screen flex-1 flex-col overflow-auto">
+      <div className="flex min-h-screen flex-1 flex-col overflow-auto pb-14 md:pb-0">
         {children}
       </div>
+      <BottomNav />
     </div>
   );
 }

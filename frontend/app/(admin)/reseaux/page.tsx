@@ -288,14 +288,14 @@ export default function ReseauxPage() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <header className="border-b border-zinc-200 bg-white px-8 py-5">
+      <header className="border-b border-zinc-200 bg-white px-4 md:px-8 py-4 md:py-5">
         <h1 className="text-base font-semibold text-zinc-900">Réseaux sociaux</h1>
         <p className="text-xs text-zinc-400">
           Génère des captions Instagram et Facebook à partir d'une photo et d'un contexte
         </p>
       </header>
 
-      <main className="px-8 py-8">
+      <main className="px-4 md:px-8 py-6 md:py-8">
         {/* Alertes */}
         {alerts.length > 0 && (
           <div className="mb-6 max-w-5xl">
