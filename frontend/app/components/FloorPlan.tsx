@@ -4,7 +4,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { RestaurantTable, Reservation } from "../types";
 
 const GRID_SIZE = 1; // % — snap grid resolution (1% = 100×100 grid)
-const REFERENCE_WIDTH = 800; // px — reference container width for table sizing
+const REFERENCE_WIDTH = 1000; // px — reference container width for table sizing
 
 function snapToGrid(val: number): number {
   return Math.round(val / GRID_SIZE) * GRID_SIZE;
