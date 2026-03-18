@@ -964,25 +964,49 @@ export default function ReservationsPage() {
             {newTableShape === "rectangle" && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-zinc-400">Orientation</label>
-                <button
-                  type="button"
-                  onClick={() => setNewTableRotation((r) => (r === 0 ? 90 : 0))}
-                  className="py-1.5 rounded text-xs border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white transition-colors"
-                >
-                  ↻ Pivoter 90° {newTableRotation === 0 ? "(horizontal → vertical)" : "(vertical → horizontal)"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewTableRotation(0)}
+                    className={`flex-1 py-1.5 rounded text-xs border transition-colors ${
+                      newTableRotation === 0
+                        ? "bg-zinc-600 border-zinc-500 text-white"
+                        : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                    }`}
+                  >
+                    ↔ Horizontal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewTableRotation(90)}
+                    className={`flex-1 py-1.5 rounded text-xs border transition-colors ${
+                      newTableRotation === 90
+                        ? "bg-zinc-600 border-zinc-500 text-white"
+                        : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                    }`}
+                  >
+                    ↕ Vertical
+                  </button>
+                </div>
               </div>
             )}
 
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={newTableMovable}
-                onChange={(e) => setNewTableMovable(e.target.checked)}
-                className="accent-white w-3.5 h-3.5"
-              />
-              <span className="text-xs text-zinc-400">Table déplaçable (peut être groupée)</span>
-            </label>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-zinc-400">Options</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNewTableMovable(!newTableMovable)}
+                  className={`flex-1 py-1.5 rounded text-xs border transition-colors ${
+                    newTableMovable
+                      ? "bg-zinc-600 border-zinc-500 text-white"
+                      : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                  }`}
+                >
+                  Déplaçable
+                </button>
+              </div>
+            </div>
 
             <div className="flex gap-2 pt-1">
               <button
@@ -1047,48 +1071,63 @@ export default function ReservationsPage() {
               </div>
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={editingTable.snap ?? true}
-                onChange={(e) => setEditingTable({ ...editingTable, snap: e.target.checked })}
-                className="accent-white w-3.5 h-3.5"
-              />
-              <span className="text-xs text-zinc-400">Alignement automatique sur la grille</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={editingTable.movable ?? true}
-                onChange={(e) => setEditingTable({ ...editingTable, movable: e.target.checked })}
-                className="accent-white w-3.5 h-3.5"
-              />
-              <span className="text-xs text-zinc-400">Table déplaçable (peut être groupée avec d'autres)</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={editingTable.premium ?? false}
-                onChange={(e) => setEditingTable({ ...editingTable, premium: e.target.checked })}
-                className="accent-amber-400 w-3.5 h-3.5"
-              />
-              <span className="text-xs text-zinc-400">Table Premium</span>
-            </label>
-
             {editingTable.shape === "rectangle" && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-zinc-400">Orientation</label>
-                <button
-                  type="button"
-                  onClick={() => setEditingTable({ ...editingTable, rotation: (editingTable.rotation ?? 0) === 0 ? 90 : 0 })}
-                  className="py-1.5 rounded text-xs border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white transition-colors"
-                >
-                  ↻ Pivoter 90° {(editingTable.rotation ?? 0) === 0 ? "(horizontal → vertical)" : "(vertical → horizontal)"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingTable({ ...editingTable, rotation: 0 })}
+                    className={`flex-1 py-1.5 rounded text-xs border transition-colors ${
+                      (editingTable.rotation ?? 0) === 0
+                        ? "bg-zinc-600 border-zinc-500 text-white"
+                        : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                    }`}
+                  >
+                    ↔ Horizontal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingTable({ ...editingTable, rotation: 90 })}
+                    className={`flex-1 py-1.5 rounded text-xs border transition-colors ${
+                      (editingTable.rotation ?? 0) === 90
+                        ? "bg-zinc-600 border-zinc-500 text-white"
+                        : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                    }`}
+                  >
+                    ↕ Vertical
+                  </button>
+                </div>
               </div>
             )}
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-zinc-400">Options</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingTable({ ...editingTable, movable: !(editingTable.movable ?? true) })}
+                  className={`flex-1 py-1.5 rounded text-xs border transition-colors ${
+                    (editingTable.movable ?? true)
+                      ? "bg-zinc-600 border-zinc-500 text-white"
+                      : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                  }`}
+                >
+                  Déplaçable
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingTable({ ...editingTable, premium: !(editingTable.premium ?? false) })}
+                  className={`flex-1 py-1.5 rounded text-xs border transition-colors ${
+                    (editingTable.premium ?? false)
+                      ? "bg-amber-600 border-amber-500 text-white"
+                      : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                  }`}
+                >
+                  Premium
+                </button>
+              </div>
+            </div>
 
             <div className="flex gap-2 pt-1">
               <button
