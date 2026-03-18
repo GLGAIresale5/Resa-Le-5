@@ -14,7 +14,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:3001",
-        # Production — updated after Vercel deploy
+        # Production
+        "https://resa-le-5.vercel.app",
         "https://le5.glg-ai.com",
         "https://glg-ai.vercel.app",
     ],
