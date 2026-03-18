@@ -72,51 +72,62 @@ export default function Sidebar() {
             const isGroupActive = item.children.some((c) => pathname.startsWith(c.href));
             return (
               <div key={item.label}>
-                {/* Group label — icon only on tablet */}
-                <div className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm justify-center lg:justify-start ${
-                  isGroupActive ? "text-zinc-900" : "text-zinc-600"
-                }`}>
+                {/* Group label — clickable, navigates to first child */}
+                <Link
+                  href={item.children[0].href}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition justify-center lg:justify-start ${
+                    isGroupActive
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                  }`}
+                  title={item.label}
+                >
                   {item.icon}
                   <span className="font-medium hidden lg:inline">{item.label}</span>
-                </div>
-                {/* Sub-items — hidden on tablet, visible on desktop */}
-                <div className="hidden lg:flex ml-4 flex-col gap-0.5 border-l border-zinc-100 pl-3">
-                  {item.children.map((child) => {
-                    const isActive = pathname === child.href || pathname.startsWith(child.href + "/");
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className={`rounded-lg px-3 py-2 text-sm transition ${
-                          isActive
-                            ? "bg-zinc-900 font-medium text-white"
-                            : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
-                        }`}
-                      >
-                        {child.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-                {/* Sub-items — tablet: show first child as link on the icon */}
-                <div className="flex lg:hidden flex-col gap-0.5">
-                  {item.children.map((child) => {
-                    const isActive = pathname === child.href || pathname.startsWith(child.href + "/");
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className={`flex items-center justify-center rounded-lg px-1 py-1.5 text-[10px] transition ${
-                          isActive
-                            ? "bg-zinc-900 font-medium text-white"
-                            : "text-zinc-400 hover:bg-zinc-50 hover:text-zinc-900"
-                        }`}
-                      >
-                        {child.label}
-                      </Link>
-                    );
-                  })}
-                </div>
+                </Link>
+                {/* Sub-items — only visible when group is active */}
+                {isGroupActive && (
+                  <>
+                    {/* Desktop sub-items */}
+                    <div className="hidden lg:flex ml-4 flex-col gap-0.5 border-l border-zinc-100 pl-3 mt-0.5">
+                      {item.children.map((child) => {
+                        const isActive = pathname === child.href || pathname.startsWith(child.href + "/");
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={`rounded-lg px-3 py-2 text-sm transition ${
+                              isActive
+                                ? "bg-zinc-900 font-medium text-white"
+                                : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                            }`}
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                    {/* Tablet sub-items */}
+                    <div className="flex lg:hidden flex-col gap-0.5 mt-0.5">
+                      {item.children.map((child) => {
+                        const isActive = pathname === child.href || pathname.startsWith(child.href + "/");
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={`flex items-center justify-center rounded-lg px-1 py-1.5 text-[10px] transition ${
+                              isActive
+                                ? "bg-zinc-900 font-medium text-white"
+                                : "text-zinc-400 hover:bg-zinc-50 hover:text-zinc-900"
+                            }`}
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             );
           }
