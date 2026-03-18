@@ -835,7 +835,7 @@ export default function ReservationsPage() {
                               <span className="text-xs">{SOURCE_ICON[res.source] ?? ""}</span>
                             </div>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="text-xs text-zinc-400">{res.time}</span>
+                              <span className="text-xs text-zinc-400">{res.time?.slice(0, 5)}</span>
                               <span className="text-xs text-zinc-600">·</span>
                               <span className="text-xs text-zinc-400">{res.guest_count} pers.</span>
                               {res.table_id && (
