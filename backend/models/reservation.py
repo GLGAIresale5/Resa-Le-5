@@ -124,7 +124,7 @@ class ReservationUpdate(BaseModel):
     guest_phone: Optional[str] = None
     guest_email: Optional[str] = None
     guest_count: Optional[int] = None
-    date: Optional[date] = None
+    date: Optional[str] = None  # "YYYY-MM-DD" string to avoid Pydantic date parsing issues
     time: Optional[str] = None
     duration: Optional[int] = None
     source: Optional[str] = None
