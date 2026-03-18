@@ -592,7 +592,7 @@ export default function ReservationsPage() {
             )}
           </div>
         </div>
-        {/* Second row: service selector + edit button */}
+        {/* Second row: service selector + edit button (tablet/desktop only for edit) */}
         <div className="flex items-center gap-2 overflow-x-auto">
           <div className="flex items-center gap-0.5 bg-zinc-800 border border-zinc-700 rounded p-0.5 shrink-0">
             <button
@@ -627,7 +627,7 @@ export default function ReservationsPage() {
             <span><span className="text-white font-medium">{activeReservations.length}</span> résa</span>
             <span><span className="text-white font-medium">{totalCovers}</span> couv.</span>
           </div>
-          <div className="ml-auto shrink-0">
+          <div className="ml-auto shrink-0 hidden md:block">
             <button
               onClick={() => setEditMode((prev) => !prev)}
               className={`px-3 py-1.5 rounded text-sm border transition-colors ${
@@ -643,8 +643,74 @@ export default function ReservationsPage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* LEFT: Floor plan */}
-        <div className="flex flex-col flex-1 min-w-0 p-2 md:p-4 gap-3">
+        {/* MOBILE: Full-screen reservation list (no floor plan) */}
+        <div className="flex md:hidden flex-col flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-20 text-zinc-500 text-sm">Chargement...</div>
+          ) : serviceReservations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center flex-1 text-zinc-500 text-sm gap-2 p-6">
+              <span className="text-2xl">📋</span>
+              <p>Aucune réservation ce jour</p>
+              <button
+                onClick={() => { setShowForm(true); setShowPanel(true); }}
+                className="mt-2 text-xs text-zinc-400 underline hover:text-white"
+              >
+                Ajouter une réservation
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-zinc-800">
+              {serviceReservations
+                .sort((a, b) => a.time.localeCompare(b.time))
+                .map((res) => (
+                  <div
+                    key={res.id}
+                    className={`px-4 py-3 transition-colors ${res.status === "cancelled" ? "opacity-40" : "active:bg-zinc-800/60"}`}
+                    onClick={() => { setEditingReservation(res); setShowForm(false); setShowPanel(true); }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-white truncate">{res.guest_name}</span>
+                          <span className="text-xs">{SOURCE_ICON[res.source] ?? ""}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs text-zinc-300">{res.time?.slice(0, 5)}</span>
+                          <span className="text-xs text-zinc-500">·</span>
+                          <span className="text-xs text-zinc-300">{res.guest_count} pers.</span>
+                          {res.table_id && (
+                            <>
+                              <span className="text-xs text-zinc-500">·</span>
+                              <span className="text-xs text-zinc-300 font-medium">
+                                {tables.find((t) => t.id === res.table_id)?.name ?? ""}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {res.notes && <p className="text-xs text-zinc-400 mt-1 truncate">{res.notes}</p>}
+                      </div>
+                      {res.status === "pending" && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleConfirmReservation(res.id); }}
+                          className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-zinc-700 text-zinc-300 border border-zinc-600"
+                        >
+                          Valider
+                        </button>
+                      )}
+                      {res.status === "confirmed" && (
+                        <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                          Validé
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+
+        {/* TABLET/DESKTOP: Floor plan */}
+        <div className="hidden md:flex flex-col flex-1 min-w-0 p-2 md:p-4 gap-3">
           {/* Plan selector tabs */}
           <div className="flex items-end gap-0 border-b border-zinc-800 pb-0">
             {floorPlans.map((plan) => {
@@ -792,10 +858,10 @@ export default function ReservationsPage() {
           </div>
         </div>
 
-        {/* Floating button to toggle panel on tablet/mobile */}
+        {/* Floating button to toggle panel on tablet (hidden on mobile — list is already visible) */}
         <button
           onClick={() => setShowPanel((v) => !v)}
-          className="lg:hidden absolute bottom-4 right-4 z-40 flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 shadow-lg transition hover:bg-zinc-100"
+          className="hidden md:flex lg:hidden absolute bottom-4 right-4 z-40 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 shadow-lg transition hover:bg-zinc-100"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
