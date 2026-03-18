@@ -346,7 +346,7 @@ def _auto_assign_table(
         now = _dt.now()
         service_dt = _dt.strptime(f"{res_date} {res_time}", "%Y-%m-%d %H:%M")
         hours_until = (service_dt - now).total_seconds() / 3600
-        allow_upgrade = hours_until >= UPGRADE_HOURS_BEFORE
+        allow_upgrade = 0 < hours_until <= UPGRADE_HOURS_BEFORE
     except Exception:
         pass
 
