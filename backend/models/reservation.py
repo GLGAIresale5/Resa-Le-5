@@ -44,6 +44,7 @@ class RestaurantTable(BaseModel):
     rotation: int = 0      # 0 or 90
     snap: bool = True      # snap to grid when dragging
     movable: bool = True   # peut être groupée avec d'autres tables
+    client_priority: int = 3  # 1-5, where 5 = best table
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -61,6 +62,7 @@ class TableCreate(BaseModel):
     rotation: int = 0
     snap: bool = True
     movable: bool = True
+    client_priority: int = 3
 
 
 class TableUpdate(BaseModel):
@@ -74,6 +76,7 @@ class TableUpdate(BaseModel):
     rotation: Optional[int] = None
     snap: Optional[bool] = None
     movable: Optional[bool] = None
+    client_priority: Optional[int] = None
 
 
 # =====================

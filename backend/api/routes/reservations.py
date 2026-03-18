@@ -219,11 +219,15 @@ def _score_table(
     Rules (in priority order):
     1. Prefer tables NOT used during this service (no need to redress quickly)
     2. Avoid tight turnovers (table freed < 30 min before new reservation)
-    3. Prefer tables farther from currently occupied tables (spacing/comfort)
-    4. Prefer smallest capacity that fits (tight fit)
+    3. Prefer higher client_priority tables (5 = best table, 1 = least preferred)
+    4. Prefer tables farther from currently occupied tables (spacing/comfort)
+    5. Prefer smallest capacity that fits (tight fit)
     """
     score_used = 0 if table["id"] not in tables_used_this_service else 10
     score_turnover = 0 if table["id"] not in tables_with_tight_turnover else 5
+
+    # Client priority: higher priority (5) → lower score (0), lower priority (1) → higher score (4)
+    score_priority = 5 - table.get("client_priority", 3)
 
     # Spacing: average distance to occupied tables (inverted — farther is better)
     score_spacing = 0
@@ -240,7 +244,7 @@ def _score_table(
     # Capacity fit: prefer tightest fit
     score_capacity = table["capacity"]
 
-    return (score_used, score_turnover, score_spacing, score_capacity)
+    return (score_used, score_turnover, score_priority, score_spacing, score_capacity)
 
 
 def _auto_assign_table(
@@ -277,7 +281,7 @@ def _auto_assign_table(
     # Get all tables for the restaurant (with positions for group detection)
     tables_resp = (
         supabase.table("restaurant_tables")
-        .select("id, capacity, x, y, movable, floor_plan_id")
+        .select("id, capacity, x, y, movable, floor_plan_id, client_priority")
         .eq("restaurant_id", restaurant_id)
         .execute()
     )
@@ -328,8 +332,43 @@ def _auto_assign_table(
         t for t in tables if t["id"] in occupied
     ]
 
+    # Premium upgrade rule:
+    # If we're 5+ hours before the service and high-priority tables (4-5) are free,
+    # allow seating at a bigger table (e.g., 2 guests at a 4-top premium table).
+    # Max upgrade: capacity up to guest_count * 2 (don't seat 2 at an 8-top).
+    from datetime import datetime as _dt
+    UPGRADE_HOURS_BEFORE = 5
+    UPGRADE_MIN_PRIORITY = 4
+    UPGRADE_MAX_CAPACITY_RATIO = 2
+
+    allow_upgrade = False
+    try:
+        now = _dt.now()
+        service_dt = _dt.strptime(f"{res_date} {res_time}", "%Y-%m-%d %H:%M")
+        hours_until = (service_dt - now).total_seconds() / 3600
+        allow_upgrade = hours_until >= UPGRADE_HOURS_BEFORE
+    except Exception:
+        pass
+
     # Strategy 1: single table — scored and sorted by smart rules
     candidates = [t for t in tables if t["capacity"] >= guest_count and t["id"] not in occupied]
+
+    if allow_upgrade:
+        # Also consider premium tables with higher capacity (upgrade)
+        max_upgrade_cap = guest_count * UPGRADE_MAX_CAPACITY_RATIO
+        premium_upgrades = [
+            t for t in tables
+            if t["id"] not in occupied
+            and t.get("client_priority", 3) >= UPGRADE_MIN_PRIORITY
+            and t["capacity"] >= guest_count
+            and t["capacity"] <= max_upgrade_cap
+        ]
+        # Merge without duplicates
+        candidate_ids = {t["id"] for t in candidates}
+        for t in premium_upgrades:
+            if t["id"] not in candidate_ids:
+                candidates.append(t)
+
     candidates.sort(key=lambda t: _score_table(
         t, occupied, tables_used_this_service,
         tables_with_tight_turnover, occupied_tables_with_positions,

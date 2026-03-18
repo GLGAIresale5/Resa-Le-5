@@ -92,6 +92,7 @@ export interface RestaurantTable {
   rotation?: number;
   snap?: boolean;
   movable?: boolean;
+  client_priority?: number;
   created_at?: string;
   updated_at?: string;
 }
