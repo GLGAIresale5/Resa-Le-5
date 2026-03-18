@@ -194,6 +194,55 @@ def _find_adjacent_groups(tables: list, threshold: float = 9.0) -> list:
     return groups
 
 
+def _determine_service(time_str: str) -> str:
+    """Determine if a time falls in lunch or dinner service."""
+    h = int(time_str.split(":")[0])
+    return "lunch" if h < 17 else "dinner"
+
+
+def _time_to_minutes(time_str: str) -> int:
+    """Convert 'HH:MM' or 'HH:MM:SS' to minutes since midnight."""
+    parts = time_str.split(":")
+    return int(parts[0]) * 60 + int(parts[1])
+
+
+def _score_table(
+    table: dict,
+    occupied_table_ids: set,
+    tables_used_this_service: set,
+    tables_with_tight_turnover: set,
+    occupied_tables_with_positions: list,
+) -> tuple:
+    """
+    Score a table for assignment. Lower score = better choice.
+
+    Rules (in priority order):
+    1. Prefer tables NOT used during this service (no need to redress quickly)
+    2. Avoid tight turnovers (table freed < 30 min before new reservation)
+    3. Prefer tables farther from currently occupied tables (spacing/comfort)
+    4. Prefer smallest capacity that fits (tight fit)
+    """
+    score_used = 0 if table["id"] not in tables_used_this_service else 10
+    score_turnover = 0 if table["id"] not in tables_with_tight_turnover else 5
+
+    # Spacing: average distance to occupied tables (inverted — farther is better)
+    score_spacing = 0
+    if occupied_tables_with_positions:
+        total_dist = 0
+        for occ in occupied_tables_with_positions:
+            dx = table.get("x", 0) - occ.get("x", 0)
+            dy = table.get("y", 0) - occ.get("y", 0)
+            total_dist += _math.sqrt(dx * dx + dy * dy)
+        avg_dist = total_dist / len(occupied_tables_with_positions)
+        # Invert: closer tables get higher (worse) score. Max grid is ~141 (diagonal of 100x100)
+        score_spacing = max(0, 15 - avg_dist)
+
+    # Capacity fit: prefer tightest fit
+    score_capacity = table["capacity"]
+
+    return (score_used, score_turnover, score_spacing, score_capacity)
+
+
 def _auto_assign_table(
     supabase,
     restaurant_id: str,
@@ -204,10 +253,16 @@ def _auto_assign_table(
 ) -> Optional[str]:
     """
     Find the best available table for the reservation.
-    Strategy 1: smallest single table with capacity >= guest_count.
-    Strategy 2: if no single table fits, find a group of adjacent tables
-                whose combined capacity >= guest_count and all are free.
+
+    Smart rules:
+    - Prefer tables not yet used during this service (avoid rushing redress)
+    - Avoid tight turnovers (< 30 min gap after previous reservation)
+    - Maximize spacing between occupied tables for client comfort
+    - Pick the smallest table that fits (tight capacity match)
+    - Fallback: group adjacent movable tables if no single table works
     """
+    TURNOVER_BUFFER_MIN = 30  # minimum gap between reservations on same table
+
     # Get IDs of reservable floor plans
     plans_resp = (
         supabase.table("floor_plans")
@@ -226,13 +281,12 @@ def _auto_assign_table(
         .eq("restaurant_id", restaurant_id)
         .execute()
     )
-    # Keep only tables in reservable floor plans
     tables = [t for t in (tables_resp.data or []) if t.get("floor_plan_id") in reservable_plan_ids]
 
-    # Get existing reservations on the same date to build occupied set
+    # Get ALL reservations on the same date (for service-level analysis)
     existing_resp = (
         supabase.table("reservations")
-        .select("table_id, time, duration")
+        .select("table_id, time, duration, status")
         .eq("restaurant_id", restaurant_id)
         .eq("date", res_date)
         .in_("status", ["confirmed", "pending"])
@@ -240,32 +294,58 @@ def _auto_assign_table(
     )
     existing = existing_resp.data or []
 
-    occupied = set()
+    current_service = _determine_service(res_time)
+    res_start_min = _time_to_minutes(res_time)
+
+    # Build sets for scoring
+    occupied = set()                    # tables with overlapping reservations
+    tables_used_this_service = set()    # tables that had ANY reservation this service
+    tables_with_tight_turnover = set()  # tables where previous resa ends < 30 min before
+
     for r in existing:
-        if r["table_id"] and _times_overlap(res_time, duration, r["time"], r["duration"]):
+        if not r["table_id"]:
+            continue
+
+        r_service = _determine_service(r["time"])
+
+        # Track tables used during the same service
+        if r_service == current_service:
+            tables_used_this_service.add(r["table_id"])
+
+        # Check time overlap
+        if _times_overlap(res_time, duration, r["time"], r["duration"]):
             occupied.add(r["table_id"])
 
-    # Strategy 1: single table
-    candidates = sorted(
-        [t for t in tables if t["capacity"] >= guest_count],
-        key=lambda t: t["capacity"]
-    )
-    for table in candidates:
-        if table["id"] not in occupied:
-            return table["id"]
+        # Check tight turnover: previous reservation ends less than 30 min before new one starts
+        r_start = _time_to_minutes(r["time"])
+        r_end = r_start + (r["duration"] or 120)
+        gap = res_start_min - r_end
+        if 0 <= gap < TURNOVER_BUFFER_MIN:
+            tables_with_tight_turnover.add(r["table_id"])
+
+    # Build list of currently occupied table positions (for spacing calculation)
+    occupied_tables_with_positions = [
+        t for t in tables if t["id"] in occupied
+    ]
+
+    # Strategy 1: single table — scored and sorted by smart rules
+    candidates = [t for t in tables if t["capacity"] >= guest_count and t["id"] not in occupied]
+    candidates.sort(key=lambda t: _score_table(
+        t, occupied, tables_used_this_service,
+        tables_with_tight_turnover, occupied_tables_with_positions,
+    ))
+    if candidates:
+        return candidates[0]["id"]
 
     # Strategy 2: adjacent group with combined capacity >= guest_count
-    # Only movable tables can be grouped (movable=True by default)
     free_tables = [t for t in tables if t["id"] not in occupied and t.get("movable", True)]
     groups = _find_adjacent_groups(free_tables)
-    # Sort groups by combined capacity ascending (tightest fit)
     qualifying = [g for g in groups if sum(t["capacity"] for t in g) >= guest_count]
     qualifying.sort(key=lambda g: sum(t["capacity"] for t in g))
     if qualifying:
-        # Assign to the first table of the best group
         return qualifying[0][0]["id"]
 
-    return None  # No table or group available
+    return None
 
 
 @router.post("/", response_model=Reservation)
