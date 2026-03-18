@@ -13,6 +13,7 @@ from datetime import date
 
 from core.config import settings
 from supabase import create_client
+from api.routes.reservations import _auto_assign_table
 
 router = APIRouter()
 
@@ -118,8 +119,23 @@ async def public_book(body: PublicBookingRequest):
 
     full_name = f"{body.guest_first_name.strip()} {body.guest_last_name.strip()}".strip()
 
+    # Try to auto-assign a table (non-blocking — still accept if no table available)
+    assigned_table_id = None
+    try:
+        assigned_table_id = _auto_assign_table(
+            supabase,
+            restaurant_id=RESTAURANT_ID,
+            guest_count=body.guest_count,
+            res_date=body.date.isoformat(),
+            res_time=body.time,
+            duration=120,
+        )
+    except Exception:
+        pass
+
     data = {
         "restaurant_id": RESTAURANT_ID,
+        "table_id": assigned_table_id,
         "guest_name": full_name,
         "guest_phone": body.guest_phone,
         "guest_email": body.guest_email,
