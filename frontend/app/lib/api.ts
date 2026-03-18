@@ -284,6 +284,20 @@ export async function cancelReservation(reservationId: string): Promise<Reservat
   return res.json();
 }
 
+export async function noShowReservation(reservationId: string): Promise<Reservation> {
+  const res = await fetch(`${API_URL}/reservations/${reservationId}/no-show`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Erreur lors du marquage no-show");
+  return res.json();
+}
+
+export async function checkPhoneNoShows(restaurantId: string, phone: string): Promise<{ consecutive_no_shows: number }> {
+  const res = await fetch(`${API_URL}/reservations/check-phone?restaurant_id=${restaurantId}&phone=${encodeURIComponent(phone)}`);
+  if (!res.ok) return { consecutive_no_shows: 0 };
+  return res.json();
+}
+
 export async function deleteReservation(reservationId: string): Promise<void> {
   const res = await fetch(`${API_URL}/reservations/${reservationId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Erreur lors de la suppression de la réservation");

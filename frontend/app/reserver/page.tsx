@@ -44,8 +44,8 @@ export default function ReserverPage() {
 
     if (!firstName.trim()) return;
     if (!date) return;
-    if (!phone.trim() && !email.trim()) {
-      setErrorMsg("Merci de renseigner un téléphone ou un email pour vous contacter.");
+    if (!phone.trim()) {
+      setErrorMsg("Le numéro de téléphone est obligatoire.");
       return;
     }
 
@@ -312,9 +312,10 @@ export default function ReserverPage() {
 
           {/* Contact */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">Téléphone</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">Téléphone *</label>
             <input
               type="tel"
+              required
               placeholder="06 12 34 56 78"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -330,9 +331,6 @@ export default function ReserverPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
             />
-            <p className="mt-1 text-xs text-stone-400">
-              Téléphone ou email requis pour la confirmation.
-            </p>
           </div>
 
           {/* Notes */}

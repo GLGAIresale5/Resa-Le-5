@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Reservation, ReservationCreate, ReservationSource, RestaurantTable } from "../types";
+import { checkPhoneNoShows } from "../lib/api";
 
 interface ReservationFormProps {
   restaurantId: string;
@@ -58,14 +59,26 @@ export default function ReservationForm({
   const [notes, setNotes] = useState(reservation?.notes ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noShowCount, setNoShowCount] = useState(0);
+  const phoneCheckTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  const phoneRequired = guestCount > 4;
+  // Check no-show history when phone changes (debounced)
+  useEffect(() => {
+    clearTimeout(phoneCheckTimer.current);
+    const phone = guestPhone.trim();
+    if (phone.length < 8) { setNoShowCount(0); return; }
+    phoneCheckTimer.current = setTimeout(async () => {
+      const result = await checkPhoneNoShows(restaurantId, phone);
+      setNoShowCount(result.consecutive_no_shows);
+    }, 500);
+    return () => clearTimeout(phoneCheckTimer.current);
+  }, [guestPhone, restaurantId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestFirst.trim()) { setError("Le prénom est obligatoire"); return; }
+    if (!guestPhone.trim()) { setError("Le numéro de téléphone est obligatoire"); return; }
     if (!date) { setError("La date est obligatoire"); return; }
-    if (phoneRequired && !guestPhone.trim()) { setError("Le numéro de téléphone est obligatoire pour les groupes de plus de 4 personnes"); return; }
     setError(null);
     setLoading(true);
     try {
@@ -155,19 +168,25 @@ export default function ReservationForm({
 
       {/* Téléphone */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-zinc-400">
-          Téléphone{phoneRequired ? " *" : ""}
-          {phoneRequired && <span className="ml-1 text-amber-400/70">(obligatoire pour les groupes)</span>}
-        </label>
+        <label className="text-xs text-zinc-400">Téléphone *</label>
         <input
-          className={`bg-zinc-800 border rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 ${
-            phoneRequired ? "border-amber-700/60" : "border-zinc-700"
-          }`}
+          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
           placeholder="06 00 00 00 00"
           value={guestPhone}
           onChange={(e) => setGuestPhone(e.target.value)}
         />
       </div>
+
+      {/* No-show warning */}
+      {noShowCount >= 2 && (
+        <div className="flex items-center gap-2 rounded-lg border border-orange-700/50 bg-orange-950/60 px-3 py-2.5 text-xs text-orange-300">
+          <span className="text-orange-400 text-base">⚠</span>
+          <span>
+            Ce client a <strong>{noShowCount} no-shows consécutifs</strong>.
+            Vous pouvez quand même créer la réservation.
+          </span>
+        </div>
+      )}
 
       {/* Heure + Durée */}
       <div className="grid grid-cols-2 gap-2">

@@ -614,6 +614,50 @@ def _send_guest_confirmation(reservation: dict):
             pass
 
 
+@router.post("/{reservation_id}/no-show", response_model=Reservation)
+async def no_show_reservation(reservation_id: UUID):
+    """Mark a reservation as no-show."""
+    supabase = get_supabase()
+    response = (
+        supabase.table("reservations")
+        .update({"status": "no_show"})
+        .eq("id", str(reservation_id))
+        .execute()
+    )
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Réservation introuvable")
+    return response.data[0]
+
+
+@router.get("/check-phone")
+async def check_phone_no_shows(restaurant_id: UUID, phone: str):
+    """Check consecutive no-shows for a phone number.
+
+    Returns the count of consecutive no-shows starting from the most
+    recent reservation backwards.  As soon as a non-no-show status is
+    found the count stops (counter resets when the client shows up).
+    """
+    supabase = get_supabase()
+    # Fetch recent reservations for this phone, newest first
+    response = (
+        supabase.table("reservations")
+        .select("status, date, time")
+        .eq("restaurant_id", str(restaurant_id))
+        .eq("guest_phone", phone.strip())
+        .order("date", desc=True)
+        .order("time", desc=True)
+        .limit(20)
+        .execute()
+    )
+    consecutive = 0
+    for r in response.data or []:
+        if r["status"] == "no_show":
+            consecutive += 1
+        else:
+            break
+    return {"consecutive_no_shows": consecutive}
+
+
 @router.delete("/{reservation_id}")
 async def delete_reservation(reservation_id: UUID):
     supabase = get_supabase()

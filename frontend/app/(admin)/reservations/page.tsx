@@ -15,6 +15,7 @@ import {
   deleteReservation,
   confirmReservation,
   cancelReservation,
+  noShowReservation,
   updateTable,
   createTable,
   deleteTable,
@@ -126,6 +127,15 @@ const SOURCE_ICON: Record<string, string> = {
   facebook: "👥",
   web: "🌐",
 };
+
+/** Returns true if current time is >= reservation time + 15 min on the given date */
+function isNoShowEligible(resDate: string, resTime: string): boolean {
+  const now = new Date();
+  const [h, m] = resTime.split(":").map(Number);
+  const target = new Date(resDate + "T00:00:00");
+  target.setHours(h, m + 15, 0, 0);
+  return now >= target;
+}
 
 // ── Services ──────────────────────────────────────────────────────────────────
 
@@ -470,6 +480,11 @@ export default function ReservationsPage() {
     setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
   };
 
+  const handleNoShowReservation = async (resId: string) => {
+    const res = await noShowReservation(resId);
+    setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
+  };
+
   const handleCancelReservation = async (resId: string) => {
     const res = await updateReservation(resId, { status: "cancelled" });
     setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
@@ -697,9 +712,22 @@ export default function ReservationsPage() {
                           Valider
                         </button>
                       )}
-                      {res.status === "confirmed" && (
+                      {res.status === "confirmed" && isNoShowEligible(res.date, res.time) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if (confirm("Marquer comme no-show ?")) handleNoShowReservation(res.id); }}
+                          className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/40"
+                        >
+                          No-show
+                        </button>
+                      )}
+                      {res.status === "confirmed" && !isNoShowEligible(res.date, res.time) && (
                         <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
                           Validé
+                        </span>
+                      )}
+                      {res.status === "no_show" && (
+                        <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/40">
+                          No-show
                         </span>
                       )}
                     </div>
@@ -969,9 +997,22 @@ export default function ReservationsPage() {
                               Valider
                             </button>
                           )}
-                          {res.status === "confirmed" && (
+                          {res.status === "confirmed" && isNoShowEligible(res.date, res.time) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); if (confirm("Marquer comme no-show ?")) handleNoShowReservation(res.id); }}
+                              className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 transition-colors"
+                            >
+                              No-show
+                            </button>
+                          )}
+                          {res.status === "confirmed" && !isNoShowEligible(res.date, res.time) && (
                             <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
                               Validé
+                            </span>
+                          )}
+                          {res.status === "no_show" && (
+                            <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/40">
+                              No-show
                             </span>
                           )}
                         </div>
