@@ -823,7 +823,10 @@ export default function ReservationsPage() {
                           res.status === "cancelled" ? "opacity-40" : "cursor-grab active:cursor-grabbing"
                         } ${draggingReservationId === res.id ? "opacity-50" : ""}`}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div
+                          className="flex items-start justify-between gap-2 cursor-pointer"
+                          onClick={() => { setEditingReservation(res); setShowForm(false); }}
+                        >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-white truncate">
@@ -847,43 +850,22 @@ export default function ReservationsPage() {
                             {res.notes && (
                               <p className="text-xs text-zinc-500 mt-1 truncate">{res.notes}</p>
                             )}
-                            <span className={`text-[10px] mt-1 inline-block ${STATUS_COLOR[res.status]}`}>
-                              {STATUS_LABEL[res.status]}
-                            </span>
                           </div>
                           {res.status !== "cancelled" && (
-                            <div className="flex gap-1 shrink-0">
-                              {res.status === "pending" && (
-                                <button
-                                  onClick={() => handleConfirmReservation(res.id)}
-                                  className="p-1 text-emerald-500 hover:text-emerald-300 transition-colors text-xs"
-                                  title="Confirmer la réservation"
-                                >
-                                  ✓
-                                </button>
-                              )}
-                              <button
-                                onClick={() => { setEditingReservation(res); setShowForm(false); }}
-                                className="p-1 text-zinc-500 hover:text-white transition-colors text-xs"
-                                title="Modifier"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                onClick={() => handleCancelReservation(res.id)}
-                                className="p-1 text-zinc-500 hover:text-amber-400 transition-colors text-xs"
-                                title="Annuler"
-                              >
-                                ✕
-                              </button>
-                              <button
-                                onClick={() => handleDeleteReservation(res.id)}
-                                className="p-1 text-zinc-500 hover:text-red-400 transition-colors text-xs"
-                                title="Supprimer"
-                              >
-                                🗑
-                              </button>
-                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (res.status === "pending") handleConfirmReservation(res.id);
+                                else if (res.status === "confirmed") handleCancelReservation(res.id);
+                              }}
+                              className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-medium transition-colors ${
+                                res.status === "confirmed"
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                  : "bg-zinc-700 text-zinc-400 border border-zinc-600 hover:border-zinc-500"
+                              }`}
+                            >
+                              {res.status === "confirmed" ? "Validé" : "Valider"}
+                            </button>
                           )}
                         </div>
                       </div>
