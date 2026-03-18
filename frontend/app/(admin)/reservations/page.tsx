@@ -852,21 +852,21 @@ export default function ReservationsPage() {
                               <p className="text-xs text-zinc-400 mt-1 truncate">{res.notes}</p>
                             )}
                           </div>
-                          {res.status !== "cancelled" && (
+                          {res.status === "pending" && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (res.status === "pending") handleConfirmReservation(res.id);
-                                else if (res.status === "confirmed") handleCancelReservation(res.id);
+                                handleConfirmReservation(res.id);
                               }}
-                              className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-medium transition-colors ${
-                                res.status === "confirmed"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                                  : "bg-zinc-700 text-zinc-400 border border-zinc-600 hover:border-zinc-500"
-                              }`}
+                              className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-zinc-700 text-zinc-300 border border-zinc-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-500 transition-colors"
                             >
-                              {res.status === "confirmed" ? "Validé" : "Valider"}
+                              Valider
                             </button>
+                          )}
+                          {res.status === "confirmed" && (
+                            <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                              Validé
+                            </span>
                           )}
                         </div>
                       </div>
