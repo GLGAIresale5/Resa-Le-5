@@ -13,6 +13,7 @@ import {
   createReservation,
   updateReservation,
   deleteReservation,
+  confirmReservation,
   updateTable,
   createTable,
   deleteTable,
@@ -462,7 +463,7 @@ export default function ReservationsPage() {
   };
 
   const handleConfirmReservation = async (resId: string) => {
-    const res = await updateReservation(resId, { status: "confirmed" });
+    const res = await confirmReservation(resId);
     setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
   };
 

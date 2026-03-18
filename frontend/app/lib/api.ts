@@ -268,6 +268,14 @@ export async function updateReservation(
   return res.json();
 }
 
+export async function confirmReservation(reservationId: string): Promise<Reservation> {
+  const res = await fetch(`${API_URL}/reservations/${reservationId}/confirm`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Erreur lors de la confirmation de la réservation");
+  return res.json();
+}
+
 export async function deleteReservation(reservationId: string): Promise<void> {
   const res = await fetch(`${API_URL}/reservations/${reservationId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Erreur lors de la suppression de la réservation");

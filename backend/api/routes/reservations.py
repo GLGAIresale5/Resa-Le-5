@@ -440,6 +440,106 @@ async def update_reservation(reservation_id: UUID, body: ReservationUpdate):
     return response.data[0]
 
 
+@router.post("/{reservation_id}/confirm", response_model=Reservation)
+async def confirm_reservation(reservation_id: UUID):
+    """Confirm a pending reservation and notify the guest."""
+    supabase = get_supabase()
+    response = (
+        supabase.table("reservations")
+        .update({"status": "confirmed"})
+        .eq("id", str(reservation_id))
+        .execute()
+    )
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Réservation introuvable")
+
+    reservation = response.data[0]
+    _send_guest_confirmation(reservation)
+    return reservation
+
+
+def _send_guest_confirmation(reservation: dict):
+    """Send confirmation to the guest — email (Resend). SMS can be added later."""
+    from core.config import settings
+
+    guest_email = reservation.get("guest_email")
+    guest_phone = reservation.get("guest_phone")
+    guest_name = reservation.get("guest_name", "")
+    first_name = guest_name.split(" ")[0] if guest_name else ""
+    date_raw = reservation.get("date", "")
+    time_raw = (reservation.get("time", "") or "")[:5]
+    guest_count = reservation.get("guest_count", 0)
+
+    # Format date nicely
+    try:
+        from datetime import datetime as _dt
+        import locale
+        try:
+            locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
+        except Exception:
+            pass
+        d = _dt.strptime(date_raw, "%Y-%m-%d")
+        date_str = d.strftime("%A %d %B %Y").capitalize()
+    except Exception:
+        date_str = date_raw
+
+    # Priority 1: SMS via phone (placeholder — needs Twilio or similar)
+    # For now, log that SMS should be sent
+    if guest_phone:
+        # TODO: integrate Twilio or similar SMS provider
+        # sms_body = f"Bonjour {first_name}, votre réservation au restaurant Le 5 est confirmée : {date_str} à {time_raw} pour {guest_count} personne(s). À bientôt !"
+        pass
+
+    # Priority 2: Email via Resend
+    if guest_email and settings.resend_api_key:
+        try:
+            import resend
+            resend.api_key = settings.resend_api_key
+
+            html = f"""
+            <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: 0 auto;">
+                <h2 style="color: #1c1917; margin-bottom: 4px;">Réservation confirmée</h2>
+                <p style="color: #78716c; margin-top: 0;">Bonjour {first_name}, votre table est réservée !</p>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #292524;">
+                        <tr>
+                            <td style="padding: 8px 0; color: #a8a29e;">Restaurant</td>
+                            <td style="padding: 8px 0; font-weight: 600; text-align: right;">Le 5</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #a8a29e;">Date</td>
+                            <td style="padding: 8px 0; font-weight: 600; text-align: right;">{date_str}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #a8a29e;">Heure</td>
+                            <td style="padding: 8px 0; font-weight: 600; text-align: right;">{time_raw}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #a8a29e;">Couverts</td>
+                            <td style="padding: 8px 0; font-weight: 600; text-align: right;">{guest_count} personne{"s" if guest_count > 1 else ""}</td>
+                        </tr>
+                    </table>
+                </div>
+                <p style="color: #292524; font-size: 14px; line-height: 1.5;">
+                    Nous avons hâte de vous accueillir.<br>
+                    Pour toute modification, contactez-nous au <strong>01 45 53 00 68</strong>.
+                </p>
+                <p style="color: #a8a29e; font-size: 12px; margin-top: 24px;">
+                    Le 5 — 5 rue du Général Clergerie, 75116 Paris
+                </p>
+            </div>
+            """
+
+            resend.Emails.send({
+                "from": "Le 5 <reservations@glg-ai.com>",
+                "to": [guest_email],
+                "subject": f"Votre réservation au Le 5 est confirmée — {date_str} à {time_raw}",
+                "html": html,
+            })
+        except Exception:
+            pass
+
+
 @router.delete("/{reservation_id}")
 async def delete_reservation(reservation_id: UUID):
     supabase = get_supabase()

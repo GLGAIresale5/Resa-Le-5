@@ -65,12 +65,12 @@ function TableShape({
     : editMode
     ? "border-zinc-500"
     : status === "reserved"
-    ? "border-amber-400"
+    ? "border-emerald-400"
     : status === "pending"
-    ? "border-orange-400"
+    ? "border-amber-400"
     : status === "occupied"
     ? "border-red-400"
-    : "border-emerald-400";
+    : "border-zinc-600";
 
   const bgColor = isDropTarget
     ? "bg-blue-900/60"
@@ -83,12 +83,12 @@ function TableShape({
     : editMode
     ? "bg-zinc-700/60"
     : status === "reserved"
-    ? "bg-amber-900/40"
+    ? "bg-emerald-900/50"
     : status === "pending"
-    ? "bg-orange-900/30"
+    ? "bg-amber-900/40"
     : status === "occupied"
     ? "bg-red-900/40"
-    : "bg-emerald-900/30";
+    : "bg-zinc-800/40";
 
   const base = `border-2 ${borderColor} ${bgColor} flex items-center justify-center transition-colors`;
 
@@ -368,10 +368,13 @@ export default function FloorPlan({
       {!editMode && (
         <div className="absolute bottom-2 right-2 flex gap-3 text-[10px] text-zinc-400">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Libre
+            <span className="w-2 h-2 rounded-full bg-zinc-600 inline-block" /> Libre
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Réservée
+            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> En attente
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Confirmée
           </span>
           {proposedGroupIds.length > 0 && (
             <span className="flex items-center gap-1">
