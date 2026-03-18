@@ -1,0 +1,21 @@
+{
+  "name": "GLG AI — Le 5",
+  "short_name": "Le 5",
+  "description": "Gestion du restaurant Le 5",
+  "start_url": "/reservations",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
