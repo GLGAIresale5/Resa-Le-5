@@ -219,15 +219,15 @@ def _score_table(
     Rules (in priority order):
     1. Prefer tables NOT used during this service (no need to redress quickly)
     2. Avoid tight turnovers (table freed < 30 min before new reservation)
-    3. Prefer higher client_priority tables (5 = best table, 1 = least preferred)
+    3. Prefer premium tables over regular ones
     4. Prefer tables farther from currently occupied tables (spacing/comfort)
     5. Prefer smallest capacity that fits (tight fit)
     """
     score_used = 0 if table["id"] not in tables_used_this_service else 10
     score_turnover = 0 if table["id"] not in tables_with_tight_turnover else 5
 
-    # Client priority: higher priority (5) → lower score (0), lower priority (1) → higher score (4)
-    score_priority = 5 - table.get("client_priority", 3)
+    # Premium tables get priority (lower score = better)
+    score_priority = 0 if table.get("premium", False) else 1
 
     # Spacing: average distance to occupied tables (inverted — farther is better)
     score_spacing = 0
@@ -281,7 +281,7 @@ def _auto_assign_table(
     # Get all tables for the restaurant (with positions for group detection)
     tables_resp = (
         supabase.table("restaurant_tables")
-        .select("id, capacity, x, y, movable, floor_plan_id, client_priority")
+        .select("id, capacity, x, y, movable, floor_plan_id, premium")
         .eq("restaurant_id", restaurant_id)
         .execute()
     )
@@ -333,12 +333,11 @@ def _auto_assign_table(
     ]
 
     # Premium upgrade rule:
-    # If we're 5+ hours before the service and high-priority tables (4-5) are free,
+    # If we're 5+ hours before the service and premium tables are free,
     # allow seating at a bigger table (e.g., 2 guests at a 4-top premium table).
     # Max upgrade: capacity up to guest_count * 2 (don't seat 2 at an 8-top).
     from datetime import datetime as _dt
     UPGRADE_HOURS_BEFORE = 5
-    UPGRADE_MIN_PRIORITY = 4
     UPGRADE_MAX_CAPACITY_RATIO = 2
 
     allow_upgrade = False
@@ -359,7 +358,7 @@ def _auto_assign_table(
         premium_upgrades = [
             t for t in tables
             if t["id"] not in occupied
-            and t.get("client_priority", 3) >= UPGRADE_MIN_PRIORITY
+            and t.get("premium", False)
             and t["capacity"] >= guest_count
             and t["capacity"] <= max_upgrade_cap
         ]

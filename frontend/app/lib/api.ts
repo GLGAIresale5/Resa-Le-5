@@ -200,7 +200,7 @@ export async function createTable(data: {
   shape?: string;
   rotation?: number;
   movable?: boolean;
-  client_priority?: number;
+  premium?: boolean;
 }): Promise<RestaurantTable> {
   const res = await fetch(`${API_URL}/reservations/tables`, {
     method: "POST",
@@ -213,7 +213,7 @@ export async function createTable(data: {
 
 export async function updateTable(
   tableId: string,
-  data: Partial<{ name: string; capacity: number; x: number; y: number; width: number; height: number; shape: string; rotation: number; snap: boolean; movable: boolean; client_priority: number }>
+  data: Partial<{ name: string; capacity: number; x: number; y: number; width: number; height: number; shape: string; rotation: number; snap: boolean; movable: boolean; premium: boolean }>
 ): Promise<RestaurantTable> {
   const res = await fetch(`${API_URL}/reservations/tables/${tableId}`, {
     method: "PATCH",

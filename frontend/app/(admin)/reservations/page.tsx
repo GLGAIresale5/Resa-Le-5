@@ -393,7 +393,7 @@ export default function ReservationsPage() {
         rotation: editingTable.rotation ?? 0,
         snap: editingTable.snap ?? true,
         movable: editingTable.movable ?? true,
-        client_priority: editingTable.client_priority ?? 3,
+        premium: editingTable.premium ?? false,
       });
       setTables((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setEditingTable(null);
@@ -1067,26 +1067,15 @@ export default function ReservationsPage() {
               <span className="text-xs text-zinc-400">Table déplaçable (peut être groupée avec d'autres)</span>
             </label>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-zinc-400">Priorité client</label>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setEditingTable({ ...editingTable, client_priority: n })}
-                    className={`flex-1 py-1.5 rounded text-sm transition-colors ${
-                      (editingTable.client_priority ?? 3) >= n
-                        ? "text-amber-400"
-                        : "text-zinc-600"
-                    }`}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
-              <span className="text-[10px] text-zinc-500">5 = meilleure table, 1 = moins appréciée</span>
-            </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={editingTable.premium ?? false}
+                onChange={(e) => setEditingTable({ ...editingTable, premium: e.target.checked })}
+                className="accent-amber-400 w-3.5 h-3.5"
+              />
+              <span className="text-xs text-zinc-400">Table Premium</span>
+            </label>
 
             {editingTable.shape === "rectangle" && (
               <div className="flex flex-col gap-1">
