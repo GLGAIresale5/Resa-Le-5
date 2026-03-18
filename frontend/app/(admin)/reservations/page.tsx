@@ -461,6 +461,11 @@ export default function ReservationsPage() {
     }
   };
 
+  const handleConfirmReservation = async (resId: string) => {
+    const res = await updateReservation(resId, { status: "confirmed" });
+    setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
+  };
+
   const handleCancelReservation = async (resId: string) => {
     const res = await updateReservation(resId, { status: "cancelled" });
     setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
@@ -848,6 +853,15 @@ export default function ReservationsPage() {
                           </div>
                           {res.status !== "cancelled" && (
                             <div className="flex gap-1 shrink-0">
+                              {res.status === "pending" && (
+                                <button
+                                  onClick={() => handleConfirmReservation(res.id)}
+                                  className="p-1 text-emerald-500 hover:text-emerald-300 transition-colors text-xs"
+                                  title="Confirmer la réservation"
+                                >
+                                  ✓
+                                </button>
+                              )}
                               <button
                                 onClick={() => { setEditingReservation(res); setShowForm(false); }}
                                 className="p-1 text-zinc-500 hover:text-white transition-colors text-xs"

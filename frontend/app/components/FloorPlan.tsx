@@ -26,8 +26,10 @@ function getTableStatus(
   table: RestaurantTable,
   reservations: Reservation[]
 ): "free" | "reserved" | "occupied" {
-  const reserved = reservations.filter((r) => r.table_id === table.id && r.status === "confirmed");
-  if (reserved.length > 0) return "reserved";
+  const confirmed = reservations.filter((r) => r.table_id === table.id && r.status === "confirmed");
+  if (confirmed.length > 0) return "reserved";
+  const pending = reservations.filter((r) => r.table_id === table.id && r.status === "pending");
+  if (pending.length > 0) return "pending";
   return "free";
 }
 
@@ -45,7 +47,7 @@ function TableShape({
   shape: string;
   width: number;
   height: number;
-  status: "free" | "reserved" | "occupied";
+  status: "free" | "reserved" | "occupied" | "pending";
   selected: boolean;
   editMode: boolean;
   inMergeGroup?: boolean;
@@ -64,6 +66,8 @@ function TableShape({
     ? "border-zinc-500"
     : status === "reserved"
     ? "border-amber-400"
+    : status === "pending"
+    ? "border-orange-400"
     : status === "occupied"
     ? "border-red-400"
     : "border-emerald-400";
@@ -80,6 +84,8 @@ function TableShape({
     ? "bg-zinc-700/60"
     : status === "reserved"
     ? "bg-amber-900/40"
+    : status === "pending"
+    ? "bg-orange-900/30"
     : status === "occupied"
     ? "bg-red-900/40"
     : "bg-emerald-900/30";
