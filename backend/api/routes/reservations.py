@@ -476,16 +476,62 @@ async def cancel_reservation_endpoint(reservation_id: UUID):
     return reservation
 
 
-def _send_guest_cancellation(reservation: dict):
-    """Send cancellation message to the guest — email via Resend."""
+def _format_phone_international(phone: str) -> str:
+    """Convert a French phone number to international format for Brevo SMS API.
+
+    Examples:
+        '06 12 34 56 78' -> '33612345678'
+        '+33 6 12 34 56 78' -> '33612345678'
+        '0612345678' -> '33612345678'
+    """
+    # Remove all spaces, dashes, dots, parentheses
+    cleaned = phone.replace(" ", "").replace("-", "").replace(".", "").replace("(", "").replace(")", "")
+    # Remove leading +
+    if cleaned.startswith("+"):
+        cleaned = cleaned[1:]
+    # Convert 0x to 33x (French mobile/landline)
+    if cleaned.startswith("0") and len(cleaned) == 10:
+        cleaned = "33" + cleaned[1:]
+    return cleaned
+
+
+def _send_sms(phone: str, content: str):
+    """Send a transactional SMS via Brevo API."""
     from core.config import settings
+    import httpx
 
-    guest_email = reservation.get("guest_email")
-    guest_name = reservation.get("guest_name", "")
-    first_name = guest_name.split(" ")[0] if guest_name else ""
-    date_raw = reservation.get("date", "")
-    time_raw = (reservation.get("time", "") or "")[:5]
+    if not settings.brevo_api_key:
+        print("[SMS] Pas de clé Brevo configurée, SMS non envoyé")
+        return
 
+    recipient = _format_phone_international(phone)
+
+    try:
+        response = httpx.post(
+            "https://api.brevo.com/v3/transactionalSMS/sms",
+            headers={
+                "api-key": settings.brevo_api_key,
+                "Content-Type": "application/json",
+            },
+            json={
+                "type": "transactional",
+                "unicodeEnabled": True,
+                "sender": "Le 5",
+                "recipient": recipient,
+                "content": content,
+            },
+            timeout=10,
+        )
+        if response.status_code in (200, 201):
+            print(f"[SMS] Envoyé à {recipient}")
+        else:
+            print(f"[SMS] Erreur {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"[SMS] Erreur d'envoi: {e}")
+
+
+def _format_date_fr(date_raw: str) -> str:
+    """Format a YYYY-MM-DD date to French readable format."""
     try:
         from datetime import datetime as _dt
         import locale
@@ -494,124 +540,47 @@ def _send_guest_cancellation(reservation: dict):
         except Exception:
             pass
         d = _dt.strptime(date_raw, "%Y-%m-%d")
-        date_str = d.strftime("%A %d %B %Y").capitalize()
+        return d.strftime("%A %d %B %Y").capitalize()
     except Exception:
-        date_str = date_raw
+        return date_raw
 
-    if guest_email and settings.resend_api_key:
-        try:
-            import resend
-            resend.api_key = settings.resend_api_key
 
-            html = f"""
-            <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: 0 auto;">
-                <h2 style="color: #1c1917; margin-bottom: 4px;">Réservation annulée</h2>
-                <p style="color: #78716c; margin-top: 0;">Bonjour {first_name},</p>
-                <p style="color: #292524; font-size: 14px; line-height: 1.6;">
-                    Nous sommes désolés de vous informer que votre réservation du
-                    <strong>{date_str}</strong> à <strong>{time_raw}</strong> au restaurant Le 5
-                    a été annulée.
-                </p>
-                <p style="color: #292524; font-size: 14px; line-height: 1.6;">
-                    N'hésitez pas à nous recontacter pour réserver une autre date.<br>
-                    Vous pouvez nous joindre au <strong>01 45 53 00 68</strong> ou réserver en ligne.
-                </p>
-                <p style="color: #a8a29e; font-size: 12px; margin-top: 24px;">
-                    Le 5 — 5 rue du Général Clergerie, 75116 Paris
-                </p>
-            </div>
-            """
+def _send_guest_cancellation(reservation: dict):
+    """Send cancellation SMS to the guest via Brevo."""
+    guest_phone = reservation.get("guest_phone")
+    guest_name = reservation.get("guest_name", "")
+    first_name = guest_name.split(" ")[0] if guest_name else ""
+    date_raw = reservation.get("date", "")
+    time_raw = (reservation.get("time", "") or "")[:5]
+    date_str = _format_date_fr(date_raw)
 
-            resend.Emails.send({
-                "from": "Le 5 <reservations@glg-ai.com>",
-                "to": [guest_email],
-                "subject": f"Annulation de votre réservation au Le 5 — {date_str}",
-                "html": html,
-            })
-        except Exception:
-            pass
+    if guest_phone:
+        sms_body = (
+            f"Bonjour {first_name}, votre reservation au restaurant Le 5 "
+            f"du {date_str} a {time_raw} a ete annulee. "
+            f"N'hesitez pas a nous recontacter au 01 45 90 65 48 pour une autre date. "
+            f"A bientot !"
+        )
+        _send_sms(guest_phone, sms_body)
 
 
 def _send_guest_confirmation(reservation: dict):
-    """Send confirmation to the guest — email (Resend). SMS can be added later."""
-    from core.config import settings
-
-    guest_email = reservation.get("guest_email")
+    """Send confirmation SMS to the guest via Brevo."""
     guest_phone = reservation.get("guest_phone")
     guest_name = reservation.get("guest_name", "")
     first_name = guest_name.split(" ")[0] if guest_name else ""
     date_raw = reservation.get("date", "")
     time_raw = (reservation.get("time", "") or "")[:5]
     guest_count = reservation.get("guest_count", 0)
+    date_str = _format_date_fr(date_raw)
 
-    # Format date nicely
-    try:
-        from datetime import datetime as _dt
-        import locale
-        try:
-            locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
-        except Exception:
-            pass
-        d = _dt.strptime(date_raw, "%Y-%m-%d")
-        date_str = d.strftime("%A %d %B %Y").capitalize()
-    except Exception:
-        date_str = date_raw
-
-    # Priority 1: SMS via phone (placeholder — needs Twilio or similar)
-    # For now, log that SMS should be sent
     if guest_phone:
-        # TODO: integrate Twilio or similar SMS provider
-        # sms_body = f"Bonjour {first_name}, votre réservation au restaurant Le 5 est confirmée : {date_str} à {time_raw} pour {guest_count} personne(s). À bientôt !"
-        pass
-
-    # Priority 2: Email via Resend
-    if guest_email and settings.resend_api_key:
-        try:
-            import resend
-            resend.api_key = settings.resend_api_key
-
-            html = f"""
-            <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: 0 auto;">
-                <h2 style="color: #1c1917; margin-bottom: 4px;">Réservation confirmée</h2>
-                <p style="color: #78716c; margin-top: 0;">Bonjour {first_name}, votre table est réservée !</p>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 20px 0;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #292524;">
-                        <tr>
-                            <td style="padding: 8px 0; color: #a8a29e;">Restaurant</td>
-                            <td style="padding: 8px 0; font-weight: 600; text-align: right;">Le 5</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #a8a29e;">Date</td>
-                            <td style="padding: 8px 0; font-weight: 600; text-align: right;">{date_str}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #a8a29e;">Heure</td>
-                            <td style="padding: 8px 0; font-weight: 600; text-align: right;">{time_raw}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #a8a29e;">Couverts</td>
-                            <td style="padding: 8px 0; font-weight: 600; text-align: right;">{guest_count} personne{"s" if guest_count > 1 else ""}</td>
-                        </tr>
-                    </table>
-                </div>
-                <p style="color: #292524; font-size: 14px; line-height: 1.5;">
-                    Nous avons hâte de vous accueillir.<br>
-                    Pour toute modification, contactez-nous au <strong>01 45 53 00 68</strong>.
-                </p>
-                <p style="color: #a8a29e; font-size: 12px; margin-top: 24px;">
-                    Le 5 — 5 rue du Général Clergerie, 75116 Paris
-                </p>
-            </div>
-            """
-
-            resend.Emails.send({
-                "from": "Le 5 <reservations@glg-ai.com>",
-                "to": [guest_email],
-                "subject": f"Votre réservation au Le 5 est confirmée — {date_str} à {time_raw}",
-                "html": html,
-            })
-        except Exception:
-            pass
+        sms_body = (
+            f"Bonjour {first_name}, votre reservation au restaurant Le 5 est confirmee : "
+            f"{date_str} a {time_raw} pour {guest_count} personne{'s' if guest_count > 1 else ''}. "
+            f"Pour toute modification : 01 45 90 65 48. A bientot !"
+        )
+        _send_sms(guest_phone, sms_body)
 
 
 @router.post("/{reservation_id}/no-show", response_model=Reservation)
