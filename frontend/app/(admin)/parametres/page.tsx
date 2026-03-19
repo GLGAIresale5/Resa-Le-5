@@ -17,7 +17,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function ParametresPage() {
-  const [pushStatus, setPushStatus] = useState<"loading" | "granted" | "denied" | "default" | "unsupported">("loading");
+  const [pushStatus, setPushStatus] = useState<"loading" | "active" | "inactive" | "denied" | "unsupported">("loading");
   const [subscribing, setSubscribing] = useState(false);
 
   useEffect(() => {
@@ -25,11 +25,19 @@ export default function ParametresPage() {
       setPushStatus("unsupported");
       return;
     }
-    setPushStatus(Notification.permission as "granted" | "denied" | "default");
+    if (Notification.permission === "denied") {
+      setPushStatus("denied");
+      return;
+    }
+    // Check if actively subscribed
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      setPushStatus(sub ? "active" : "inactive");
+    }).catch(() => setPushStatus("inactive"));
   }, []);
 
   async function handleToggleNotifications() {
-    if (pushStatus === "granted") {
+    if (pushStatus === "active") {
       // Unsubscribe
       try {
         const registration = await navigator.serviceWorker.ready;
@@ -42,7 +50,7 @@ export default function ParametresPage() {
           });
           await subscription.unsubscribe();
         }
-        setPushStatus("default");
+        setPushStatus("inactive");
       } catch (err) {
         console.error("Erreur désabonnement:", err);
       }
@@ -52,7 +60,11 @@ export default function ParametresPage() {
     // Subscribe
     setSubscribing(true);
     try {
-      const permission = await Notification.requestPermission();
+      // Check current permission — if already granted, skip the prompt
+      let permission = Notification.permission;
+      if (permission !== "granted") {
+        permission = await Notification.requestPermission();
+      }
       if (permission !== "granted") {
         setPushStatus("denied");
         setSubscribing(false);
@@ -82,7 +94,7 @@ export default function ParametresPage() {
         }),
       });
 
-      setPushStatus("granted");
+      setPushStatus("active");
     } catch (err) {
       console.error("Erreur abonnement:", err);
     }
@@ -106,10 +118,10 @@ export default function ParametresPage() {
               <div>
                 <p className="text-sm font-medium text-zinc-900">Notifications push</p>
                 <p className="text-xs text-zinc-500">
-                  {pushStatus === "granted"
+                  {pushStatus === "active"
                     ? "Vous recevez les alertes de nouvelles réservations"
                     : pushStatus === "denied"
-                    ? "Notifications bloquées dans les réglages de votre appareil"
+                    ? "Notifications bloquées — allez dans Réglages > Safari pour les réactiver"
                     : pushStatus === "unsupported"
                     ? "Non disponible sur cet appareil"
                     : "Recevez une alerte à chaque nouvelle réservation"}
@@ -121,12 +133,12 @@ export default function ParametresPage() {
                 onClick={handleToggleNotifications}
                 disabled={subscribing}
                 className={`relative h-7 w-12 rounded-full transition-colors ${
-                  pushStatus === "granted" ? "bg-green-500" : "bg-zinc-300"
+                  pushStatus === "active" ? "bg-green-500" : "bg-zinc-300"
                 } ${subscribing ? "opacity-50" : ""}`}
               >
                 <span
                   className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                    pushStatus === "granted" ? "translate-x-5" : "translate-x-0.5"
+                    pushStatus === "active" ? "translate-x-5" : "translate-x-0.5"
                   }`}
                 />
               </button>
