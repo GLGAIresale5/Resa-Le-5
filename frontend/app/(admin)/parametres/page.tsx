@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../lib/auth-context";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const RESTAURANT_ID = process.env.NEXT_PUBLIC_RESTAURANT_ID ?? "";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -17,6 +18,9 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function ParametresPage() {
+  const { restaurant, user, signOut } = useAuth();
+  const RESTAURANT_ID = restaurant?.id ?? "";
+  const router = useRouter();
   const [pushStatus, setPushStatus] = useState<"loading" | "active" | "inactive" | "denied" | "unsupported">("loading");
   const [subscribing, setSubscribing] = useState(false);
 
@@ -156,6 +160,30 @@ export default function ParametresPage() {
         </div>
       </div>
 
+      {/* Compte */}
+      <div className="mt-8">
+        <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Compte</h2>
+        <div className="mt-3 rounded-xl border border-zinc-200 bg-white">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-base">
+                👤
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-900">{user?.email}</p>
+                <p className="text-xs text-zinc-500">{restaurant?.name}</p>
+              </div>
+            </div>
+            <button
+              onClick={async () => { await signOut(); router.push("/login"); }}
+              className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+            >
+              Déconnexion
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Placeholder for future settings */}
       <div className="mt-8">
         <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">À venir</h2>
@@ -163,7 +191,6 @@ export default function ParametresPage() {
           {[
             { icon: "📦", label: "Gestion des stocks", desc: "Mode tendu, équilibré, flux…" },
             { icon: "🏪", label: "Restaurant", desc: "Horaires, services, coordonnées" },
-            { icon: "👤", label: "Compte", desc: "Profil, mot de passe, abonnement" },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4 opacity-50">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-base">

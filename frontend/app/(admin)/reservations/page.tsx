@@ -21,8 +21,7 @@ import {
   deleteTable,
 } from "../../lib/api";
 import { FloorPlan as FloorPlanType, RestaurantTable, Reservation, ReservationCreate } from "../../types";
-
-const RESTAURANT_ID = process.env.NEXT_PUBLIC_RESTAURANT_ID || "60945098-cb17-4b47-8771-4b0110ec6d9d";
+import { useAuth } from "../../lib/auth-context";
 
 const MERGE_THRESHOLD = 9; // % distance center-to-center to consider tables adjacent
 
@@ -168,6 +167,8 @@ function saveServicesToStorage(services: ServiceConfig[]) {
 }
 
 export default function ReservationsPage() {
+  const { restaurant } = useAuth();
+  const RESTAURANT_ID = restaurant?.id ?? "";
   const [floorPlans, setFloorPlans] = useState<FloorPlanType[]>([]);
   const [tables, setTables] = useState<RestaurantTable[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);

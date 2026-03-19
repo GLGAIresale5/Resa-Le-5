@@ -4,12 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { Review } from "../../types";
 import { fetchReviews } from "../../lib/api";
 import ReviewCard from "../../components/ReviewCard";
-
-const RESTAURANT_ID = process.env.NEXT_PUBLIC_RESTAURANT_ID ?? "";
+import { useAuth } from "../../lib/auth-context";
 
 type Tab = "pending" | "responded";
 
 export default function AvisPage() {
+  const { restaurant } = useAuth();
+  const RESTAURANT_ID = restaurant?.id ?? "";
   const [tab, setTab] = useState<Tab>("pending");
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +19,6 @@ export default function AvisPage() {
 
   const load = useCallback(async () => {
     if (!RESTAURANT_ID) {
-      setError("NEXT_PUBLIC_RESTAURANT_ID manquant dans .env.local");
       setLoading(false);
       return;
     }

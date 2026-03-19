@@ -16,14 +16,32 @@ import {
   PublishResult,
   PublishAlert,
 } from "../types";
+import { createClient } from "./supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    return { Authorization: `Bearer ${session.access_token}` };
+  }
+  return {};
+}
+
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers = {
+    ...await authHeaders(),
+    ...(options.headers as Record<string, string> || {}),
+  };
+  return fetch(url, { ...options, headers });
+}
 
 export async function fetchReviews(
   restaurantId: string,
   status: string
 ): Promise<Review[]> {
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/reviews/?restaurant_id=${restaurantId}&status=${status}`
   );
   if (!res.ok) throw new Error("Erreur lors du chargement des avis");
@@ -34,7 +52,7 @@ export async function generateResponse(
   reviewId: string,
   restaurantId: string
 ): Promise<GenerateResponseResult> {
-  const res = await fetch(`${API_URL}/reviews/${reviewId}/generate-response`, {
+  const res = await authFetch(`${API_URL}/reviews/${reviewId}/generate-response`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ review_id: reviewId, restaurant_id: restaurantId }),
@@ -51,7 +69,7 @@ export async function approveResponse(
   const params = new URLSearchParams();
   if (finalText) params.set("final_text", finalText);
 
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/reviews/${reviewId}/response/${responseId}/approve?${params}`,
     { method: "PATCH" }
   );
@@ -64,7 +82,7 @@ export async function fetchPosts(
   restaurantId: string,
   status: string = "draft"
 ): Promise<Post[]> {
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/posts/?restaurant_id=${restaurantId}&status=${status}`
   );
   if (!res.ok) throw new Error("Erreur lors du chargement des posts");
@@ -78,7 +96,7 @@ export async function generatePost(
   photoBase64?: string,
   photoMediaType?: string
 ): Promise<GeneratePostResult> {
-  const res = await fetch(`${API_URL}/posts/generate`, {
+  const res = await authFetch(`${API_URL}/posts/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -97,7 +115,7 @@ export async function approvePost(
   postId: string,
   finalText?: string
 ): Promise<void> {
-  const res = await fetch(`${API_URL}/posts/${postId}/approve`, {
+  const res = await authFetch(`${API_URL}/posts/${postId}/approve`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ final_text: finalText ?? null }),
@@ -111,7 +129,7 @@ export async function publishPost(
   postId: string,
   scheduledAt?: string
 ): Promise<PublishResult> {
-  const res = await fetch(`${API_URL}/meta/publish/${postId}`, {
+  const res = await authFetch(`${API_URL}/meta/publish/${postId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -130,7 +148,7 @@ export async function fetchPublishAlerts(
   publishDays: number[]
 ): Promise<PublishAlert[]> {
   const days = publishDays.join(",");
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/posts/alerts?restaurant_id=${restaurantId}&publish_days=${days}`
   );
   if (!res.ok) return [];
@@ -140,7 +158,7 @@ export async function fetchPublishAlerts(
 // --- Réservations ---
 
 export async function fetchFloorPlans(restaurantId: string): Promise<FloorPlan[]> {
-  const res = await fetch(`${API_URL}/reservations/floor-plans?restaurant_id=${restaurantId}`);
+  const res = await authFetch(`${API_URL}/reservations/floor-plans?restaurant_id=${restaurantId}`);
   if (!res.ok) throw new Error("Erreur lors du chargement des plans");
   return res.json();
 }
@@ -150,7 +168,7 @@ export async function createFloorPlan(data: {
   name: string;
   sort_order?: number;
 }): Promise<FloorPlan> {
-  const res = await fetch(`${API_URL}/reservations/floor-plans`, {
+  const res = await authFetch(`${API_URL}/reservations/floor-plans`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -163,7 +181,7 @@ export async function updateFloorPlan(
   planId: string,
   data: { name?: string; reservable?: boolean }
 ): Promise<FloorPlan> {
-  const res = await fetch(`${API_URL}/reservations/floor-plans/${planId}`, {
+  const res = await authFetch(`${API_URL}/reservations/floor-plans/${planId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -173,7 +191,7 @@ export async function updateFloorPlan(
 }
 
 export async function deleteFloorPlan(planId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/reservations/floor-plans/${planId}`, { method: "DELETE" });
+  const res = await authFetch(`${API_URL}/reservations/floor-plans/${planId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Erreur lors de la suppression du plan");
 }
 
@@ -183,7 +201,7 @@ export async function fetchTables(
 ): Promise<RestaurantTable[]> {
   let url = `${API_URL}/reservations/tables?restaurant_id=${restaurantId}`;
   if (floorPlanId) url += `&floor_plan_id=${floorPlanId}`;
-  const res = await fetch(url);
+  const res = await authFetch(url);
   if (!res.ok) throw new Error("Erreur lors du chargement des tables");
   return res.json();
 }
@@ -202,7 +220,7 @@ export async function createTable(data: {
   movable?: boolean;
   premium?: boolean;
 }): Promise<RestaurantTable> {
-  const res = await fetch(`${API_URL}/reservations/tables`, {
+  const res = await authFetch(`${API_URL}/reservations/tables`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -215,7 +233,7 @@ export async function updateTable(
   tableId: string,
   data: Partial<{ name: string; capacity: number; x: number; y: number; width: number; height: number; shape: string; rotation: number; snap: boolean; movable: boolean; premium: boolean }>
 ): Promise<RestaurantTable> {
-  const res = await fetch(`${API_URL}/reservations/tables/${tableId}`, {
+  const res = await authFetch(`${API_URL}/reservations/tables/${tableId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -225,7 +243,7 @@ export async function updateTable(
 }
 
 export async function deleteTable(tableId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/reservations/tables/${tableId}`, { method: "DELETE" });
+  const res = await authFetch(`${API_URL}/reservations/tables/${tableId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Erreur lors de la suppression de la table");
 }
 
@@ -237,13 +255,13 @@ export async function fetchReservations(
   let url = `${API_URL}/reservations/?restaurant_id=${restaurantId}`;
   if (date) url += `&date=${date}`;
   if (status) url += `&status=${status}`;
-  const res = await fetch(url);
+  const res = await authFetch(url);
   if (!res.ok) throw new Error("Erreur lors du chargement des réservations");
   return res.json();
 }
 
 export async function createReservation(data: ReservationCreate): Promise<Reservation> {
-  const res = await fetch(`${API_URL}/reservations/`, {
+  const res = await authFetch(`${API_URL}/reservations/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -259,7 +277,7 @@ export async function updateReservation(
   reservationId: string,
   data: Partial<ReservationCreate>
 ): Promise<Reservation> {
-  const res = await fetch(`${API_URL}/reservations/${reservationId}`, {
+  const res = await authFetch(`${API_URL}/reservations/${reservationId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -269,7 +287,7 @@ export async function updateReservation(
 }
 
 export async function confirmReservation(reservationId: string): Promise<Reservation> {
-  const res = await fetch(`${API_URL}/reservations/${reservationId}/confirm`, {
+  const res = await authFetch(`${API_URL}/reservations/${reservationId}/confirm`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Erreur lors de la confirmation de la réservation");
@@ -277,7 +295,7 @@ export async function confirmReservation(reservationId: string): Promise<Reserva
 }
 
 export async function cancelReservation(reservationId: string): Promise<Reservation> {
-  const res = await fetch(`${API_URL}/reservations/${reservationId}/cancel`, {
+  const res = await authFetch(`${API_URL}/reservations/${reservationId}/cancel`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Erreur lors de l'annulation de la réservation");
@@ -285,7 +303,7 @@ export async function cancelReservation(reservationId: string): Promise<Reservat
 }
 
 export async function noShowReservation(reservationId: string): Promise<Reservation> {
-  const res = await fetch(`${API_URL}/reservations/${reservationId}/no-show`, {
+  const res = await authFetch(`${API_URL}/reservations/${reservationId}/no-show`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Erreur lors du marquage no-show");
@@ -293,13 +311,13 @@ export async function noShowReservation(reservationId: string): Promise<Reservat
 }
 
 export async function checkPhoneNoShows(restaurantId: string, phone: string): Promise<{ consecutive_no_shows: number }> {
-  const res = await fetch(`${API_URL}/reservations/check-phone?restaurant_id=${restaurantId}&phone=${encodeURIComponent(phone)}`);
+  const res = await authFetch(`${API_URL}/reservations/check-phone?restaurant_id=${restaurantId}&phone=${encodeURIComponent(phone)}`);
   if (!res.ok) return { consecutive_no_shows: 0 };
   return res.json();
 }
 
 export async function deleteReservation(reservationId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/reservations/${reservationId}`, { method: "DELETE" });
+  const res = await authFetch(`${API_URL}/reservations/${reservationId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Erreur lors de la suppression de la réservation");
 }
 
@@ -308,7 +326,7 @@ export async function deleteReservation(reservationId: string): Promise<void> {
 export async function fetchStockItems(restaurantId: string, category?: string): Promise<StockItem[]> {
   let url = `${API_URL}/stocks/items?restaurant_id=${restaurantId}`;
   if (category) url += `&category=${category}`;
-  const res = await fetch(url);
+  const res = await authFetch(url);
   if (!res.ok) throw new Error("Erreur chargement stocks");
   return res.json();
 }
@@ -325,7 +343,7 @@ export async function createStockItem(data: {
   supplier_milliet_price?: number | null;
   supplier_metro_price?: number | null;
 }): Promise<StockItem> {
-  const res = await fetch(`${API_URL}/stocks/items`, {
+  const res = await authFetch(`${API_URL}/stocks/items`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -335,7 +353,7 @@ export async function createStockItem(data: {
 }
 
 export async function deleteStockItem(itemId: string, restaurantId: string): Promise<void> {
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/stocks/items/${itemId}?restaurant_id=${restaurantId}`,
     { method: "DELETE" }
   );
@@ -354,7 +372,7 @@ export async function updateStockItem(
     supplier_metro_price: number | null;
   }>
 ): Promise<StockItem> {
-  const res = await fetch(`${API_URL}/stocks/items/${itemId}`, {
+  const res = await authFetch(`${API_URL}/stocks/items/${itemId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
@@ -368,7 +386,7 @@ export async function updateStockLevel(
   stockCurrent: number,
   restaurantId: string
 ): Promise<{ item: StockItem; alerts: object }> {
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/stocks/items/${itemId}/stock?restaurant_id=${restaurantId}&stock_current=${stockCurrent}`,
     { method: "PATCH" }
   );
@@ -380,7 +398,7 @@ export async function bulkUpdateStock(
   restaurantId: string,
   updates: { id: string; stock_current: number }[]
 ): Promise<{ updated_count: number; alerts: object }> {
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/stocks/items/bulk-update?restaurant_id=${restaurantId}`,
     {
       method: "POST",
@@ -393,7 +411,7 @@ export async function bulkUpdateStock(
 }
 
 export async function seedBarCatalogue(restaurantId: string): Promise<{ inserted: number }> {
-  const res = await fetch(`${API_URL}/stocks/seed?restaurant_id=${restaurantId}`, {
+  const res = await authFetch(`${API_URL}/stocks/seed?restaurant_id=${restaurantId}`, {
     method: "POST",
   });
   if (!res.ok) {
@@ -404,7 +422,7 @@ export async function seedBarCatalogue(restaurantId: string): Promise<{ inserted
 }
 
 export async function fetchDeliveries(restaurantId: string): Promise<Delivery[]> {
-  const res = await fetch(`${API_URL}/stocks/deliveries?restaurant_id=${restaurantId}`);
+  const res = await authFetch(`${API_URL}/stocks/deliveries?restaurant_id=${restaurantId}`);
   if (!res.ok) throw new Error("Erreur chargement livraisons");
   return res.json();
 }
@@ -414,7 +432,7 @@ export async function scanDeliveryNote(
   imageBase64: string,
   mediaType: string
 ): Promise<DeliveryScanResult> {
-  const res = await fetch(`${API_URL}/stocks/deliveries/scan`, {
+  const res = await authFetch(`${API_URL}/stocks/deliveries/scan`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -434,7 +452,7 @@ export async function createDelivery(data: {
   notes?: string;
   items: object[];
 }): Promise<{ delivery_id: string; items_count: number; alerts: object }> {
-  const res = await fetch(`${API_URL}/stocks/deliveries`, {
+  const res = await authFetch(`${API_URL}/stocks/deliveries`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -444,7 +462,7 @@ export async function createDelivery(data: {
 }
 
 export async function fetchOrderList(restaurantId: string): Promise<OrderItem[]> {
-  const res = await fetch(`${API_URL}/stocks/order-list?restaurant_id=${restaurantId}`);
+  const res = await authFetch(`${API_URL}/stocks/order-list?restaurant_id=${restaurantId}`);
   if (!res.ok) throw new Error("Erreur chargement bon de commande");
   return res.json();
 }
@@ -455,7 +473,7 @@ export async function scanZReport(
   mediaType: string,
   saleDate?: string,
 ): Promise<ZReportScanResult> {
-  const res = await fetch(`${API_URL}/stocks/z-report/scan`, {
+  const res = await authFetch(`${API_URL}/stocks/z-report/scan`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -473,7 +491,7 @@ export async function saveZReport(
   data: { restaurant_id: string; sale_date: string; items: object[] },
   mode: string = "equilibre"
 ): Promise<{ saved_count: number; updated_thresholds: object[] }> {
-  const res = await fetch(`${API_URL}/stocks/z-report?mode=${mode}`, {
+  const res = await authFetch(`${API_URL}/stocks/z-report?mode=${mode}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -486,7 +504,7 @@ export async function recalculateThresholds(
   restaurantId: string,
   mode: string = "equilibre"
 ): Promise<{ updated_count: number; items: object[] }> {
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/stocks/recalculate-thresholds?restaurant_id=${restaurantId}&mode=${mode}`,
     { method: "POST" }
   );
@@ -509,7 +527,7 @@ export async function importLAdditionCsv(
 }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(
+  const res = await authFetch(
     `${API_URL}/stocks/import-laddition?restaurant_id=${restaurantId}&mode=${mode}`,
     { method: "POST", body: form }
   );
@@ -525,7 +543,7 @@ export async function stockAgentChat(
   messages: ChatMessage[],
   context?: { reservations_count?: number; weather?: string; notes?: string }
 ): Promise<{ response: string }> {
-  const res = await fetch(`${API_URL}/stocks/agent/chat`, {
+  const res = await authFetch(`${API_URL}/stocks/agent/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

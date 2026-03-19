@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import reviews, posts, reservations, stocks
-from api.routes import google_reviews, meta_publish, public_booking, push
+from api.routes import google_reviews, meta_publish, public_booking, push, auth
 
 app = FastAPI(
     title="GLG AI API",
@@ -32,6 +32,7 @@ app.include_router(stocks.router)
 app.include_router(google_reviews.router)
 app.include_router(meta_publish.router)
 app.include_router(push.router, prefix="/push", tags=["push-notifications"])
+app.include_router(auth.router)
 
 
 @app.get("/")

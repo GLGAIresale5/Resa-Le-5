@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from supabase import create_client
 from core.config import settings
+from core.auth import get_current_user, verify_restaurant_owner
 import httpx
 from datetime import datetime, timezone
 from typing import Optional
@@ -34,7 +35,7 @@ def _to_unix(dt: datetime) -> int:
 
 
 @router.post("/publish/{post_id}")
-def publish_to_meta(post_id: str, body: PublishPostRequest = None):
+async def publish_to_meta(post_id: str, body: PublishPostRequest = None, user_id: str = Depends(get_current_user)):
     """
     Publie ou programme un post approuvé sur Instagram et/ou Facebook.
 

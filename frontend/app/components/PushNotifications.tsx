@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { useAuth } from "../lib/auth-context";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const RESTAURANT_ID = process.env.NEXT_PUBLIC_RESTAURANT_ID ?? "";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -21,6 +21,8 @@ function urlBase64ToUint8Array(base64String: string) {
  * The actual permission prompt is handled in /parametres.
  */
 export default function PushNotifications() {
+  const { restaurant } = useAuth();
+  const RESTAURANT_ID = restaurant?.id ?? "";
   useEffect(() => {
     if (
       typeof window === "undefined" ||

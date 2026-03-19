@@ -12,3 +12,4 @@ google-auth==2.29.0
 google-auth-oauthlib==1.2.0
 pywebpush==2.1.2
 py-vapid==1.9.4
+PyJWT[crypto]==2.12.1

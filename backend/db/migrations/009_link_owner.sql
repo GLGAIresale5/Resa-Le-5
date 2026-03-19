@@ -1,0 +1,14 @@
+-- ============================================================
+-- GLG AI — Migration 009 : Rattacher Le 5 à son owner
+-- ============================================================
+-- Cette migration sera exécutée APRÈS la création du compte
+-- Supabase Auth de Baptiste.
+--
+-- Usage :
+-- 1. Créer le compte via /register ou Supabase Dashboard
+-- 2. Récupérer le user UUID
+-- 3. Exécuter :
+--    UPDATE restaurants SET owner_id = '<USER_UUID>' WHERE name = 'Le 5';
+--
+-- Note : les policies RLS existent déjà et filtrent par owner_id.
+-- Une fois owner_id renseigné, seul le propriétaire verra ses données.

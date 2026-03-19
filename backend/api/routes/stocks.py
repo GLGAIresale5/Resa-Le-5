@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Depends
 from typing import List, Optional
 from uuid import UUID
 from datetime import date
@@ -6,6 +6,7 @@ import csv, io
 from collections import defaultdict
 
 from core.config import settings
+from core.auth import get_current_user, verify_restaurant_owner
 from models.stock import (
     StockItem, StockItemCreate, StockItemUpdate, StockBulkUpdate,
     Delivery, DeliveryCreate, DeliveryScanRequest, DeliveryScanResult,
@@ -30,7 +31,8 @@ def get_supabase():
 # =====================
 
 @router.get("/items", response_model=List[StockItem])
-def list_stock_items(restaurant_id: UUID = Query(...), category: Optional[str] = None):
+async def list_stock_items(restaurant_id: UUID = Query(...), category: Optional[str] = None, user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     query = (
         supabase.table("stock_items")
@@ -45,7 +47,8 @@ def list_stock_items(restaurant_id: UUID = Query(...), category: Optional[str] =
 
 
 @router.post("/items", response_model=StockItem)
-def create_stock_item(body: StockItemCreate):
+async def create_stock_item(body: StockItemCreate, user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
     data = body.model_dump(mode="json")
     result = supabase.table("stock_items").insert(data).execute()
@@ -55,7 +58,7 @@ def create_stock_item(body: StockItemCreate):
 
 
 @router.patch("/items/{item_id}", response_model=StockItem)
-def update_stock_item(item_id: UUID, body: StockItemUpdate):
+async def update_stock_item(item_id: UUID, body: StockItemUpdate, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     updates = {k: v for k, v in body.model_dump(mode="json").items() if v is not None}
     if not updates:
@@ -72,7 +75,8 @@ def update_stock_item(item_id: UUID, body: StockItemUpdate):
 
 
 @router.delete("/items/{item_id}", status_code=204)
-def delete_stock_item(item_id: UUID, restaurant_id: UUID = Query(...)):
+async def delete_stock_item(item_id: UUID, restaurant_id: UUID = Query(...), user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     result = (
         supabase.table("stock_items")
@@ -86,8 +90,9 @@ def delete_stock_item(item_id: UUID, restaurant_id: UUID = Query(...)):
 
 
 @router.patch("/items/{item_id}/stock")
-def update_stock_level(item_id: UUID, stock_current: float, restaurant_id: UUID = Query(...)):
+async def update_stock_level(item_id: UUID, stock_current: float, restaurant_id: UUID = Query(...), user_id: str = Depends(get_current_user)):
     """Met à jour uniquement le niveau de stock, puis vérifie les alertes."""
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     result = (
         supabase.table("stock_items")
@@ -112,8 +117,9 @@ def update_stock_level(item_id: UUID, stock_current: float, restaurant_id: UUID 
 
 
 @router.post("/items/bulk-update")
-def bulk_update_stock(body: StockBulkUpdate, restaurant_id: UUID = Query(...)):
+async def bulk_update_stock(body: StockBulkUpdate, restaurant_id: UUID = Query(...), user_id: str = Depends(get_current_user)):
     """Mise à jour en masse — saisie initiale ou remise à zéro."""
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     updated = []
     for upd in body.updates:
@@ -270,8 +276,9 @@ BAR_CATALOGUE = [
 
 
 @router.post("/seed")
-def seed_bar_catalogue(restaurant_id: UUID):
+async def seed_bar_catalogue(restaurant_id: UUID, user_id: str = Depends(get_current_user)):
     """Insère le catalogue bar depuis le cadencier. À appeler une seule fois."""
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
 
     # Vérifier que le catalogue est vide
@@ -314,7 +321,8 @@ def seed_bar_catalogue(restaurant_id: UUID):
 # =====================
 
 @router.get("/deliveries")
-def list_deliveries(restaurant_id: UUID = Query(...), limit: int = 20):
+async def list_deliveries(restaurant_id: UUID = Query(...), limit: int = 20, user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     deliveries = (
         supabase.table("deliveries")
@@ -328,8 +336,9 @@ def list_deliveries(restaurant_id: UUID = Query(...), limit: int = 20):
 
 
 @router.post("/deliveries/scan", response_model=DeliveryScanResult)
-def scan_delivery_note(body: DeliveryScanRequest):
+async def scan_delivery_note(body: DeliveryScanRequest, user_id: str = Depends(get_current_user)):
     """OCR du bon de livraison via Claude Vision."""
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
     catalogue = (
         supabase.table("stock_items")
@@ -348,8 +357,9 @@ def scan_delivery_note(body: DeliveryScanRequest):
 
 
 @router.post("/deliveries")
-def create_delivery(body: DeliveryCreate):
+async def create_delivery(body: DeliveryCreate, user_id: str = Depends(get_current_user)):
     """Enregistre une livraison et met à jour les stocks."""
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
 
     # Créer la livraison
@@ -406,8 +416,9 @@ def create_delivery(body: DeliveryCreate):
 # =====================
 
 @router.get("/order-list", response_model=List[OrderItem])
-def get_order_list(restaurant_id: UUID = Query(...)):
+async def get_order_list(restaurant_id: UUID = Query(...), user_id: str = Depends(get_current_user)):
     """Retourne les articles sous seuil, triés par niveau d'alerte."""
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     items = (
         supabase.table("stock_items")
@@ -447,8 +458,9 @@ def get_order_list(restaurant_id: UUID = Query(...)):
 # =====================
 
 @router.post("/z-report/scan", response_model=ZReportScanResult)
-def scan_z_report(body: ZReportScanRequest):
+async def scan_z_report(body: ZReportScanRequest, user_id: str = Depends(get_current_user)):
     """OCR du ticket Z via Claude Vision."""
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
     catalogue = (
         supabase.table("stock_items")
@@ -466,8 +478,9 @@ def scan_z_report(body: ZReportScanRequest):
 
 
 @router.post("/z-report")
-def save_z_report(body: ZReportCreate, mode: str = Query("equilibre")):
+async def save_z_report(body: ZReportCreate, mode: str = Query("equilibre"), user_id: str = Depends(get_current_user)):
     """Enregistre les ventes du jour et recalcule les seuils automatiquement."""
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
 
     saved_count = 0
@@ -491,8 +504,9 @@ def save_z_report(body: ZReportCreate, mode: str = Query("equilibre")):
 
 
 @router.post("/recalculate-thresholds")
-def recalculate_thresholds(restaurant_id: UUID = Query(...), mode: str = Query("equilibre")):
+async def recalculate_thresholds(restaurant_id: UUID = Query(...), mode: str = Query("equilibre"), user_id: str = Depends(get_current_user)):
     """Recalcule stock_min et stock_reorder de tous les articles depuis tout l'historique Z disponible."""
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     updated = _recalculate_thresholds(supabase, str(restaurant_id), mode)
     return {"updated_count": len(updated), "items": updated}
@@ -569,8 +583,10 @@ async def import_laddition_csv(
     restaurant_id: UUID = Query(...),
     file: UploadFile = File(...),
     mode: str = Query("equilibre"),
+    user_id: str = Depends(get_current_user),
 ):
     """Importe l'historique de ventes depuis un export CSV L'Addition (SalesDocumentLines)."""
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     content = await file.read()
     try:
         text = content.decode("utf-8-sig")
@@ -681,7 +697,8 @@ async def import_laddition_csv(
 # =====================
 
 @router.post("/agent/chat")
-def agent_chat(body: AgentChatRequest):
+async def agent_chat(body: AgentChatRequest, user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
     stock_items = (
         supabase.table("stock_items")

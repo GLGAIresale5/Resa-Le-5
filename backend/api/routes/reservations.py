@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from uuid import UUID
 from datetime import date, datetime, timedelta
 
 from core.config import settings
+from core.auth import get_current_user, verify_restaurant_owner
 from models.reservation import (
     FloorPlan, FloorPlanCreate,
     RestaurantTable, TableCreate, TableUpdate,
@@ -23,7 +24,8 @@ def get_supabase():
 # =====================
 
 @router.get("/floor-plans", response_model=List[FloorPlan])
-async def list_floor_plans(restaurant_id: UUID = Query(...)):
+async def list_floor_plans(restaurant_id: UUID = Query(...), user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     response = (
         supabase.table("floor_plans")
@@ -37,7 +39,8 @@ async def list_floor_plans(restaurant_id: UUID = Query(...)):
 
 
 @router.post("/floor-plans", response_model=FloorPlan)
-async def create_floor_plan(body: FloorPlanCreate):
+async def create_floor_plan(body: FloorPlanCreate, user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
     response = (
         supabase.table("floor_plans")
@@ -50,7 +53,7 @@ async def create_floor_plan(body: FloorPlanCreate):
 
 
 @router.patch("/floor-plans/{floor_plan_id}", response_model=FloorPlan)
-async def update_floor_plan(floor_plan_id: UUID, body: dict):
+async def update_floor_plan(floor_plan_id: UUID, body: dict, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     updates = {k: v for k, v in body.items() if v is not None}
     if not updates:
@@ -67,7 +70,7 @@ async def update_floor_plan(floor_plan_id: UUID, body: dict):
 
 
 @router.delete("/floor-plans/{floor_plan_id}")
-async def delete_floor_plan(floor_plan_id: UUID):
+async def delete_floor_plan(floor_plan_id: UUID, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     supabase.table("floor_plans").update({"is_active": False}).eq("id", str(floor_plan_id)).execute()
     return {"status": "deleted"}
@@ -80,8 +83,10 @@ async def delete_floor_plan(floor_plan_id: UUID):
 @router.get("/tables", response_model=List[RestaurantTable])
 async def list_tables(
     restaurant_id: UUID = Query(...),
-    floor_plan_id: Optional[UUID] = Query(None)
+    floor_plan_id: Optional[UUID] = Query(None),
+    user_id: str = Depends(get_current_user),
 ):
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     query = (
         supabase.table("restaurant_tables")
@@ -95,7 +100,8 @@ async def list_tables(
 
 
 @router.post("/tables", response_model=RestaurantTable)
-async def create_table(body: TableCreate):
+async def create_table(body: TableCreate, user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
     response = (
         supabase.table("restaurant_tables")
@@ -108,7 +114,7 @@ async def create_table(body: TableCreate):
 
 
 @router.patch("/tables/{table_id}", response_model=RestaurantTable)
-async def update_table(table_id: UUID, body: TableUpdate):
+async def update_table(table_id: UUID, body: TableUpdate, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     updates = body.model_dump(exclude_none=True, mode="json")
     if not updates:
@@ -125,7 +131,7 @@ async def update_table(table_id: UUID, body: TableUpdate):
 
 
 @router.delete("/tables/{table_id}")
-async def delete_table(table_id: UUID):
+async def delete_table(table_id: UUID, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     supabase.table("restaurant_tables").delete().eq("id", str(table_id)).execute()
     return {"status": "deleted"}
@@ -140,7 +146,9 @@ async def list_reservations(
     restaurant_id: UUID = Query(...),
     date: Optional[str] = Query(None),       # "YYYY-MM-DD"
     status: Optional[str] = Query(None),
+    user_id: str = Depends(get_current_user),
 ):
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     query = (
         supabase.table("reservations")
@@ -387,7 +395,8 @@ def _auto_assign_table(
 
 
 @router.post("/", response_model=Reservation)
-async def create_reservation(body: ReservationCreate):
+async def create_reservation(body: ReservationCreate, user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
     data = body.model_dump(mode="json")
     # Convert date to string
@@ -422,7 +431,7 @@ async def create_reservation(body: ReservationCreate):
 
 
 @router.patch("/{reservation_id}", response_model=Reservation)
-async def update_reservation(reservation_id: UUID, body: ReservationUpdate):
+async def update_reservation(reservation_id: UUID, body: ReservationUpdate, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     updates = body.model_dump(exclude_none=True, mode="json")
     if "date" in updates and hasattr(updates["date"], "isoformat"):
@@ -441,7 +450,7 @@ async def update_reservation(reservation_id: UUID, body: ReservationUpdate):
 
 
 @router.post("/{reservation_id}/confirm", response_model=Reservation)
-async def confirm_reservation(reservation_id: UUID):
+async def confirm_reservation(reservation_id: UUID, user_id: str = Depends(get_current_user)):
     """Confirm a pending reservation and notify the guest."""
     supabase = get_supabase()
     response = (
@@ -459,7 +468,7 @@ async def confirm_reservation(reservation_id: UUID):
 
 
 @router.post("/{reservation_id}/cancel", response_model=Reservation)
-async def cancel_reservation_endpoint(reservation_id: UUID):
+async def cancel_reservation_endpoint(reservation_id: UUID, user_id: str = Depends(get_current_user)):
     """Cancel a reservation and notify the guest."""
     supabase = get_supabase()
     response = (
@@ -584,7 +593,7 @@ def _send_guest_confirmation(reservation: dict):
 
 
 @router.post("/{reservation_id}/no-show", response_model=Reservation)
-async def no_show_reservation(reservation_id: UUID):
+async def no_show_reservation(reservation_id: UUID, user_id: str = Depends(get_current_user)):
     """Mark a reservation as no-show."""
     supabase = get_supabase()
     response = (
@@ -599,13 +608,14 @@ async def no_show_reservation(reservation_id: UUID):
 
 
 @router.get("/check-phone")
-async def check_phone_no_shows(restaurant_id: UUID, phone: str):
+async def check_phone_no_shows(restaurant_id: UUID, phone: str, user_id: str = Depends(get_current_user)):
     """Check consecutive no-shows for a phone number.
 
     Returns the count of consecutive no-shows starting from the most
     recent reservation backwards.  As soon as a non-no-show status is
     found the count stops (counter resets when the client shows up).
     """
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
     # Fetch recent reservations for this phone, newest first
     response = (
@@ -628,7 +638,7 @@ async def check_phone_no_shows(restaurant_id: UUID, phone: str):
 
 
 @router.delete("/{reservation_id}")
-async def delete_reservation(reservation_id: UUID):
+async def delete_reservation(reservation_id: UUID, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     supabase.table("reservations").delete().eq("id", str(reservation_id)).execute()
     return {"status": "deleted"}

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from supabase import create_client
 from core.config import settings
+from core.auth import get_current_user, verify_restaurant_owner
 from agents.social_agent import generate_post
 from models.post import GeneratePostRequest, ApprovePostRequest
 from datetime import datetime, timedelta, timezone
@@ -12,8 +13,9 @@ supabase = create_client(settings.supabase_url, settings.supabase_service_key)
 
 
 @router.get("/")
-def list_posts(restaurant_id: str, status: str = "draft"):
+async def list_posts(restaurant_id: str, status: str = "draft", user_id: str = Depends(get_current_user)):
     """Liste les posts d'un restaurant par statut."""
+    await verify_restaurant_owner(user_id, restaurant_id)
     result = (
         supabase.table("posts")
         .select("*")
@@ -26,8 +28,9 @@ def list_posts(restaurant_id: str, status: str = "draft"):
 
 
 @router.post("/generate")
-def generate(body: GeneratePostRequest):
+async def generate(body: GeneratePostRequest, user_id: str = Depends(get_current_user)):
     """Génère des captions réseaux sociaux pour un post."""
+    await verify_restaurant_owner(user_id, body.restaurant_id)
 
     # Récupérer le restaurant
     restaurant = (
@@ -76,7 +79,7 @@ def generate(body: GeneratePostRequest):
 
 
 @router.patch("/{post_id}/approve")
-def approve_post(post_id: str, body: ApprovePostRequest):
+async def approve_post(post_id: str, body: ApprovePostRequest, user_id: str = Depends(get_current_user)):
     """Approuve un post (avec ou sans modification du texte final)."""
     update_data = {"status": "approved"}
     if body.final_text:
@@ -93,13 +96,15 @@ DAY_NAMES_FR = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "
 
 
 @router.get("/alerts")
-def publish_alerts(
+async def publish_alerts(
     restaurant_id: str,
     publish_days: str = Query(..., description="Jours de publication (0=dim..6=sam), séparés par des virgules"),
+    user_id: str = Depends(get_current_user),
 ):
     """
     Vérifie si un jour de publication approche (dans les 48h) sans post approuvé ou programmé.
     """
+    await verify_restaurant_owner(user_id, restaurant_id)
     days = [int(d.strip()) for d in publish_days.split(",") if d.strip().isdigit()]
     if not days:
         return []

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "../lib/auth-context";
 
 type NavItem =
   | { label: string; href: string; icon: React.ReactNode; soon?: boolean; children?: never }
@@ -51,6 +52,7 @@ const navItems: NavItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { restaurant } = useAuth();
 
   return (
     <aside className="hidden md:flex h-screen flex-col border-r border-zinc-200 bg-white w-16 lg:w-56 transition-all duration-200">
@@ -61,7 +63,7 @@ export default function Sidebar() {
         </div>
         <div className="min-w-0 hidden lg:block">
           <p className="truncate text-sm font-semibold text-zinc-900">GLG AI</p>
-          <p className="truncate text-xs text-zinc-400">Le 5</p>
+          <p className="truncate text-xs text-zinc-400">{restaurant?.name ?? "Restaurant"}</p>
         </div>
       </div>
 

@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { PostCaptions, PublishAlert } from "../../types";
 import { generatePost, approvePost, publishPost, fetchPublishAlerts } from "../../lib/api";
-
-const RESTAURANT_ID = process.env.NEXT_PUBLIC_RESTAURANT_ID ?? "";
+import { useAuth } from "../../lib/auth-context";
 
 const PLATFORMS = [
   { id: "instagram", label: "Instagram" },
@@ -76,6 +75,8 @@ function getNextSlot(selectedDays: number[], time: string): { iso: string; label
 }
 
 export default function ReseauxPage() {
+  const { restaurant } = useAuth();
+  const RESTAURANT_ID = restaurant?.id ?? "";
   const [context, setContext] = useState("");
   const [platforms, setPlatforms] = useState<string[]>(["instagram", "facebook"]);
   const [photoFile, setPhotoFile] = useState<File | null>(null);

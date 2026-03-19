@@ -23,8 +23,7 @@ import {
   fetchOrderList,
   stockAgentChat,
 } from "../../lib/api";
-
-const RESTAURANT_ID = process.env.NEXT_PUBLIC_RESTAURANT_ID ?? "";
+import { useAuth } from "../../lib/auth-context";
 
 type Tab = "stocks" | "commande" | "agent";
 
@@ -961,6 +960,8 @@ function fileToBase64(file: File): Promise<string> {
 // =====================
 
 export default function StocksCuisinePage() {
+  const { restaurant } = useAuth();
+  const RESTAURANT_ID = restaurant?.id ?? "";
   const [tab, setTab] = useState<Tab>("stocks");
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);

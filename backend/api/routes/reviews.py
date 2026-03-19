@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from supabase import create_client
 from core.config import settings
+from core.auth import get_current_user, verify_restaurant_owner
 from agents.review_agent import generate_review_response
 from models.review import GenerateResponseRequest
 
@@ -10,8 +11,9 @@ supabase = create_client(settings.supabase_url, settings.supabase_service_key)
 
 
 @router.get("/")
-def list_reviews(restaurant_id: str, status: str = "pending"):
+async def list_reviews(restaurant_id: str, status: str = "pending", user_id: str = Depends(get_current_user)):
     """Liste les avis d'un restaurant par statut."""
+    await verify_restaurant_owner(user_id, restaurant_id)
     result = (
         supabase.table("reviews")
         .select("*")
@@ -24,7 +26,7 @@ def list_reviews(restaurant_id: str, status: str = "pending"):
 
 
 @router.post("/{review_id}/generate-response")
-def generate_response(review_id: str, body: GenerateResponseRequest):
+async def generate_response(review_id: str, body: GenerateResponseRequest, user_id: str = Depends(get_current_user)):
     """Génère une réponse IA pour un avis donné."""
 
     # Récupérer l'avis
@@ -74,7 +76,7 @@ def generate_response(review_id: str, body: GenerateResponseRequest):
 
 
 @router.patch("/{review_id}/response/{response_id}/approve")
-def approve_response(review_id: str, response_id: str, final_text: str = None):
+async def approve_response(review_id: str, response_id: str, final_text: str = None, user_id: str = Depends(get_current_user)):
     """Approuve une réponse (avec ou sans modification)."""
 
     update_data = {"status": "approved"}

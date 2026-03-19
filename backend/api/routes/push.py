@@ -2,12 +2,13 @@
 Push notification routes — subscribe/unsubscribe + send notifications.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
 
 from core.config import settings
+from core.auth import get_current_user, verify_restaurant_owner
 from supabase import create_client
 
 router = APIRouter()
@@ -25,14 +26,15 @@ class PushSubscription(BaseModel):
 
 
 @router.get("/vapid-public-key")
-async def get_vapid_public_key():
+async def get_vapid_public_key(user_id: str = Depends(get_current_user)):
     """Return the VAPID public key for frontend subscription."""
     return {"publicKey": settings.vapid_public_key}
 
 
 @router.post("/subscribe")
-async def subscribe(body: PushSubscription, restaurant_id: UUID = Query(...)):
+async def subscribe(body: PushSubscription, restaurant_id: UUID = Query(...), user_id: str = Depends(get_current_user)):
     """Register a push subscription for notifications."""
+    await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
 
     # Upsert — if endpoint already exists, update keys
@@ -55,7 +57,7 @@ async def subscribe(body: PushSubscription, restaurant_id: UUID = Query(...)):
 
 
 @router.post("/unsubscribe")
-async def unsubscribe(body: dict):
+async def unsubscribe(body: dict, user_id: str = Depends(get_current_user)):
     """Remove a push subscription."""
     supabase = get_supabase()
     endpoint = body.get("endpoint")

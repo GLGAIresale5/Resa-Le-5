@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from supabase import create_client
 from core.config import settings
+from core.auth import get_current_user, verify_restaurant_owner
 import httpx
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as GoogleRequest
@@ -38,7 +39,7 @@ def _check_google_configured():
 
 
 @router.post("/reviews/sync")
-def sync_google_reviews():
+async def sync_google_reviews(user_id: str = Depends(get_current_user)):
     """Récupère les avis Google Business Profile et les sauvegarde dans Supabase."""
     _check_google_configured()
 
@@ -95,7 +96,7 @@ def sync_google_reviews():
 
 
 @router.post("/reviews/{review_id}/publish-response")
-def publish_google_response(review_id: str):
+async def publish_google_response(review_id: str, user_id: str = Depends(get_current_user)):
     """Publie la réponse approuvée sur Google Business Profile."""
     _check_google_configured()
 
