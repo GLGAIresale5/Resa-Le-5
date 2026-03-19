@@ -29,11 +29,17 @@ export default function ParametresPage() {
       setPushStatus("denied");
       return;
     }
-    // Check if actively subscribed
-    navigator.serviceWorker.ready.then(async (reg) => {
-      const sub = await reg.pushManager.getSubscription();
+    // Check if actively subscribed — with timeout fallback
+    const timeout = setTimeout(() => setPushStatus("inactive"), 3000);
+    navigator.serviceWorker.register("/sw.js").then((reg) => {
+      return reg.pushManager.getSubscription();
+    }).then((sub) => {
+      clearTimeout(timeout);
       setPushStatus(sub ? "active" : "inactive");
-    }).catch(() => setPushStatus("inactive"));
+    }).catch(() => {
+      clearTimeout(timeout);
+      setPushStatus("inactive");
+    });
   }, []);
 
   async function handleToggleNotifications() {
