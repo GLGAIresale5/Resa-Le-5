@@ -28,13 +28,22 @@ self.addEventListener("push", (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || "GLG AI", options)
+    self.registration.showNotification(data.title || "GLG AI", options).then(() => {
+      // Set app badge (red dot with count on app icon)
+      if (self.navigator && self.navigator.setAppBadge) {
+        self.navigator.setAppBadge();
+      }
+    })
   );
 });
 
-// Handle notification click — open the app
+// Handle notification click — open the app and clear badge
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  // Clear badge when user opens the app
+  if (self.navigator && self.navigator.clearAppBadge) {
+    self.navigator.clearAppBadge();
+  }
 
   const url = event.notification.data?.url || "/reservations";
 
