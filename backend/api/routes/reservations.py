@@ -531,16 +531,16 @@ def _send_sms(phone: str, content: str):
 
 
 def _format_date_fr(date_raw: str) -> str:
-    """Format a YYYY-MM-DD date to French readable format."""
+    """Format a YYYY-MM-DD date to French readable format (sans dépendre de locale)."""
+    JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    MOIS = ["janvier", "fevrier", "mars", "avril", "mai", "juin",
+            "juillet", "aout", "septembre", "octobre", "novembre", "decembre"]
     try:
         from datetime import datetime as _dt
-        import locale
-        try:
-            locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
-        except Exception:
-            pass
         d = _dt.strptime(date_raw, "%Y-%m-%d")
-        return d.strftime("%A %d %B %Y").capitalize()
+        jour = JOURS[d.weekday()]
+        mois = MOIS[d.month - 1]
+        return f"{jour} {d.day} {mois} {d.year}"
     except Exception:
         return date_raw
 
@@ -559,7 +559,7 @@ def _send_guest_cancellation(reservation: dict):
             f"Bonjour {first_name}, votre reservation au restaurant Le 5 "
             f"du {date_str} a {time_raw} a ete annulee. "
             f"N'hesitez pas a nous recontacter au 09 83 94 46 00 pour une autre date. "
-            f"A bientot !"
+            f"A bientot ! L'equipe du 5"
         )
         _send_sms(guest_phone, sms_body)
 
@@ -578,7 +578,7 @@ def _send_guest_confirmation(reservation: dict):
         sms_body = (
             f"Bonjour {first_name}, votre reservation au restaurant Le 5 est confirmee : "
             f"{date_str} a {time_raw} pour {guest_count} personne{'s' if guest_count > 1 else ''}. "
-            f"Pour toute modification : 09 83 94 46 00. A bientot !"
+            f"Pour toute modification : 09 83 94 46 00. A bientot ! L'equipe du 5"
         )
         _send_sms(guest_phone, sms_body)
 
