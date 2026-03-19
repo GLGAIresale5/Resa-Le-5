@@ -558,7 +558,7 @@ def _send_guest_cancellation(reservation: dict):
         sms_body = (
             f"Bonjour {first_name}, votre reservation au restaurant Le 5 "
             f"du {date_str} a {time_raw} a ete annulee. "
-            f"N'hesitez pas a nous recontacter au 01 45 90 65 48 pour une autre date. "
+            f"N'hesitez pas a nous recontacter au 09 83 94 46 00 pour une autre date. "
             f"A bientot !"
         )
         _send_sms(guest_phone, sms_body)
@@ -578,7 +578,7 @@ def _send_guest_confirmation(reservation: dict):
         sms_body = (
             f"Bonjour {first_name}, votre reservation au restaurant Le 5 est confirmee : "
             f"{date_str} a {time_raw} pour {guest_count} personne{'s' if guest_count > 1 else ''}. "
-            f"Pour toute modification : 01 45 90 65 48. A bientot !"
+            f"Pour toute modification : 09 83 94 46 00. A bientot !"
         )
         _send_sms(guest_phone, sms_body)
 
