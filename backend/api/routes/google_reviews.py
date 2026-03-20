@@ -3,6 +3,7 @@ from supabase import create_client
 from core.config import settings
 from core.auth import get_current_user, get_restaurant_for_user
 import httpx
+from datetime import datetime, timedelta, timezone
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as GoogleRequest
 
@@ -59,11 +60,36 @@ async def sync_google_reviews(user_id: str = Depends(get_current_user)):
     reviews = resp.json().get("reviews", [])
     supabase = _get_supabase()
 
+    # Ne pas importer les avis antérieurs à 1 mois avant la création du restaurant
+    # (évite de remonter des centaines d'anciens avis à la première connexion)
+    created_at = restaurant.get("created_at", "")
+    if created_at:
+        try:
+            # Parse ISO timestamp from Supabase
+            restaurant_created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            cutoff_date = restaurant_created - timedelta(days=30)
+        except (ValueError, TypeError):
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
+    else:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
+
     new_count = 0
+    skipped_old = 0
     for review in reviews:
         google_review_id = review.get("reviewId")
         if not google_review_id:
             continue
+
+        # Filtrer les avis trop anciens
+        review_time = review.get("createTime", "")
+        if review_time:
+            try:
+                review_date = datetime.fromisoformat(review_time.replace("Z", "+00:00"))
+                if review_date < cutoff_date:
+                    skipped_old += 1
+                    continue
+            except (ValueError, TypeError):
+                pass
 
         # Eviter les doublons (UNIQUE(source, external_id) en base)
         existing = (
@@ -91,7 +117,7 @@ async def sync_google_reviews(user_id: str = Depends(get_current_user)):
         }).execute()
         new_count += 1
 
-    return {"synced": new_count, "total_from_google": len(reviews)}
+    return {"synced": new_count, "skipped_too_old": skipped_old, "total_from_google": len(reviews)}
 
 
 @router.post("/reviews/{review_id}/publish-response")

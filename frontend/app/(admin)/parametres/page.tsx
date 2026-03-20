@@ -243,7 +243,7 @@ export default function ParametresPage() {
               </div>
             </div>
             <a
-              href={`${API_URL}/oauth/google/connect`}
+              href={`${API_URL}/oauth/google/connect?token=${session?.access_token || ""}`}
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
                 oauthStatus?.google.connected
                   ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
@@ -270,7 +270,7 @@ export default function ParametresPage() {
               </div>
             </div>
             <a
-              href={`${API_URL}/oauth/meta/connect`}
+              href={`${API_URL}/oauth/meta/connect?token=${session?.access_token || ""}`}
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
                 oauthStatus?.meta.connected
                   ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"

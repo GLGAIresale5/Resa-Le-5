@@ -1,12 +1,31 @@
-"""OAuth routes — Google Business Profile & Meta/Instagram connection flows."""
+"""OAuth routes — Google Business Profile & Meta/Instagram connection flows.
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+Les endpoints /connect acceptent le JWT via query param ?token= (car les liens
+<a href> ne peuvent pas envoyer de header Authorization).
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from fastapi.responses import RedirectResponse
 from core.config import settings
 from core.auth import get_current_user, get_restaurant_for_user, get_supabase
 import httpx
+from typing import Optional
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
+
+
+async def _get_user_from_token_param(token: Optional[str] = Query(None), authorization: Optional[str] = Header(None)) -> str:
+    """Extract user_id from JWT passed as query param or Authorization header.
+
+    Needed because OAuth connect endpoints are called via <a href> links
+    which cannot send Authorization headers.
+    """
+    # Prefer query param (from <a href>), fallback to header
+    if token:
+        authorization = f"Bearer {token}"
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token manquant — passez ?token= ou Authorization header")
+    return await get_current_user(authorization=authorization)
 
 # ─── Frontend URLs ─────────────────────────────────────────────────────────────
 FRONTEND_URL = "https://resa-le-5.vercel.app"
@@ -24,7 +43,7 @@ GBP_LOCATIONS_URL = "https://mybusinessbusinessinformation.googleapis.com/v1"
 
 
 @router.get("/google/connect")
-async def google_connect(user_id: str = Depends(get_current_user)):
+async def google_connect(user_id: str = Depends(_get_user_from_token_param)):
     """Redirect user to Google OAuth consent screen."""
     restaurant = await get_restaurant_for_user(user_id)
 
@@ -139,7 +158,7 @@ META_SCOPES = "pages_manage_posts,pages_read_engagement,instagram_basic,instagra
 
 
 @router.get("/meta/connect")
-async def meta_connect(user_id: str = Depends(get_current_user)):
+async def meta_connect(user_id: str = Depends(_get_user_from_token_param)):
     """Redirect user to Meta OAuth consent screen."""
     restaurant = await get_restaurant_for_user(user_id)
     state = restaurant["id"]
