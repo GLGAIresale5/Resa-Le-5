@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../../lib/auth-context";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+interface OAuthStatus {
+  google: { connected: boolean; location: string | null };
+  meta: { connected: boolean; page_id: string | null; instagram_id: string | null };
+  sms: { enabled: boolean; sender_name: string | null; phone: string | null };
+}
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -18,11 +24,35 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function ParametresPage() {
-  const { restaurant, user, signOut } = useAuth();
+  const { restaurant, user, session, signOut } = useAuth();
   const RESTAURANT_ID = restaurant?.id ?? "";
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pushStatus, setPushStatus] = useState<"loading" | "active" | "inactive" | "denied" | "unsupported">("loading");
   const [subscribing, setSubscribing] = useState(false);
+  const [oauthStatus, setOauthStatus] = useState<OAuthStatus | null>(null);
+  const [oauthFlash, setOauthFlash] = useState<string | null>(null);
+
+  // Check for OAuth callback flash messages
+  useEffect(() => {
+    const google = searchParams.get("google");
+    const meta = searchParams.get("meta");
+    if (google === "success") setOauthFlash("Google Business connecté avec succès !");
+    else if (google === "error") setOauthFlash("Erreur lors de la connexion Google. Réessayez.");
+    else if (meta === "success") setOauthFlash("Instagram / Facebook connecté avec succès !");
+    else if (meta === "error") setOauthFlash("Erreur lors de la connexion Meta. Réessayez.");
+  }, [searchParams]);
+
+  // Fetch OAuth status
+  useEffect(() => {
+    if (!session?.access_token) return;
+    fetch(`${API_URL}/oauth/status`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setOauthStatus(data); })
+      .catch(() => {});
+  }, [session?.access_token]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -184,24 +214,96 @@ export default function ParametresPage() {
         </div>
       </div>
 
-      {/* Placeholder for future settings */}
+      {/* OAuth flash message */}
+      {oauthFlash && (
+        <div className={`mt-6 rounded-lg border px-4 py-3 text-sm ${
+          oauthFlash.includes("succès") ? "border-green-200 bg-green-50 text-green-700" : "border-red-200 bg-red-50 text-red-700"
+        }`}>
+          {oauthFlash}
+        </div>
+      )}
+
+      {/* Connexions */}
       <div className="mt-8">
-        <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">À venir</h2>
-        <div className="mt-3 space-y-2">
-          {[
-            { icon: "📦", label: "Gestion des stocks", desc: "Mode tendu, équilibré, flux…" },
-            { icon: "🏪", label: "Restaurant", desc: "Horaires, services, coordonnées" },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4 opacity-50">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-base">
-                {item.icon}
+        <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Connexions</h2>
+        <div className="mt-3 rounded-xl border border-zinc-200 bg-white divide-y divide-zinc-100">
+          {/* Google Business */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-base">
+                G
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-600">{item.label}</p>
-                <p className="text-xs text-zinc-400">{item.desc}</p>
+                <p className="text-sm font-medium text-zinc-900">Google Business</p>
+                <p className="text-xs text-zinc-500">
+                  {oauthStatus?.google.connected
+                    ? "Connecté — les avis remontent automatiquement"
+                    : "Connectez votre fiche Google pour synchroniser les avis"}
+                </p>
               </div>
             </div>
-          ))}
+            <a
+              href={`${API_URL}/oauth/google/connect`}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                oauthStatus?.google.connected
+                  ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                  : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+              }`}
+            >
+              {oauthStatus?.google.connected ? "Reconnecter" : "Connecter"}
+            </a>
+          </div>
+
+          {/* Meta / Instagram */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-50 text-base">
+                IG
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-900">Instagram & Facebook</p>
+                <p className="text-xs text-zinc-500">
+                  {oauthStatus?.meta.connected
+                    ? "Connecté — publication automatique disponible"
+                    : "Connectez Instagram pour publier depuis l'app"}
+                </p>
+              </div>
+            </div>
+            <a
+              href={`${API_URL}/oauth/meta/connect`}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                oauthStatus?.meta.connected
+                  ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                  : "border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100"
+              }`}
+            >
+              {oauthStatus?.meta.connected ? "Reconnecter" : "Connecter"}
+            </a>
+          </div>
+
+          {/* SMS */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-base">
+                SMS
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-900">SMS de confirmation</p>
+                <p className="text-xs text-zinc-500">
+                  {oauthStatus?.sms.enabled
+                    ? `Actif — expéditeur : ${oauthStatus.sms.sender_name || "Restaurant"}`
+                    : "Désactivé"}
+                </p>
+              </div>
+            </div>
+            <span className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+              oauthStatus?.sms.enabled
+                ? "border-green-200 bg-green-50 text-green-700"
+                : "border-zinc-200 bg-zinc-50 text-zinc-500"
+            }`}>
+              {oauthStatus?.sms.enabled ? "Actif" : "Inactif"}
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -103,3 +103,22 @@ async def verify_restaurant_owner(user_id: str, restaurant_id: str) -> None:
     result = sb.table("restaurants").select("id").eq("id", str(restaurant_id)).eq("owner_id", user_id).execute()
     if not result.data:
         raise HTTPException(status_code=403, detail="Accès non autorisé à ce restaurant")
+
+
+async def get_restaurant_for_user(user_id: str) -> dict:
+    """Fetch the restaurant owned by user_id, including all API tokens.
+
+    Returns the full restaurant row as a dict.
+    Raises 404 if no restaurant found.
+    """
+    sb = get_supabase()
+    result = (
+        sb.table("restaurants")
+        .select("*")
+        .eq("owner_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Aucun restaurant associé à ce compte")
+    return result.data[0]

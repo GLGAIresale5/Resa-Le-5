@@ -2,16 +2,18 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from supabase import create_client
 from core.config import settings
-from core.auth import get_current_user, verify_restaurant_owner
+from core.auth import get_current_user, get_restaurant_for_user
 import httpx
 from datetime import datetime, timezone
 from typing import Optional
 
 router = APIRouter(prefix="/meta", tags=["meta"])
 
-supabase = create_client(settings.supabase_url, settings.supabase_service_key)
-
 META_GRAPH_BASE = "https://graph.facebook.com/v19.0"
+
+
+def _get_supabase():
+    return create_client(settings.supabase_url, settings.supabase_service_key)
 
 
 class PublishPostRequest(BaseModel):
@@ -19,11 +21,11 @@ class PublishPostRequest(BaseModel):
     scheduled_at: Optional[datetime] = None  # si fourni, programme au lieu de publier immédiatement
 
 
-def _check_meta_configured():
-    if not settings.meta_page_access_token:
+def _check_meta_configured(restaurant: dict):
+    if not restaurant.get("meta_page_access_token"):
         raise HTTPException(
             status_code=503,
-            detail="Meta Graph API non configurée — ajoutez META_PAGE_ACCESS_TOKEN, META_INSTAGRAM_ACCOUNT_ID et META_FACEBOOK_PAGE_ID dans .env",
+            detail="Meta Graph API non configurée pour ce restaurant — connectez votre compte Instagram dans les paramètres",
         )
 
 
@@ -44,10 +46,17 @@ async def publish_to_meta(post_id: str, body: PublishPostRequest = None, user_id
     - Instagram : requiert une photo (photo_url dans le post ou dans la requête)
     - Facebook : supporte texte seul + texte avec photo
     """
-    _check_meta_configured()
+    restaurant = await get_restaurant_for_user(user_id)
+    _check_meta_configured(restaurant)
+
+    meta_token = restaurant["meta_page_access_token"]
+    meta_ig_id = restaurant.get("meta_instagram_account_id") or restaurant.get("meta_instagram_id")
+    meta_fb_page_id = restaurant.get("meta_page_id")
 
     if body is None:
         body = PublishPostRequest()
+
+    supabase = _get_supabase()
 
     # ── Récupérer le post ────────────────────────────────────────────────────
     post = supabase.table("posts").select("*").eq("id", post_id).single().execute()
@@ -74,12 +83,12 @@ async def publish_to_meta(post_id: str, body: PublishPostRequest = None, user_id
     results = {}
 
     # ── Instagram ────────────────────────────────────────────────────────────
-    if "instagram" in platforms and settings.meta_instagram_account_id:
+    if "instagram" in platforms and meta_ig_id:
         if photo_url:
             params = {
                 "image_url": photo_url,
                 "caption": instagram_text,
-                "access_token": settings.meta_page_access_token,
+                "access_token": meta_token,
             }
             if is_scheduled:
                 # Pour Instagram, on passe scheduled_publish_time + published=false au container
@@ -87,7 +96,7 @@ async def publish_to_meta(post_id: str, body: PublishPostRequest = None, user_id
                 params["published"] = "false"
 
             container_resp = httpx.post(
-                f"{META_GRAPH_BASE}/{settings.meta_instagram_account_id}/media",
+                f"{META_GRAPH_BASE}/{meta_ig_id}/media",
                 params=params,
                 timeout=20,
             )
@@ -105,10 +114,10 @@ async def publish_to_meta(post_id: str, body: PublishPostRequest = None, user_id
                 else:
                     # Immédiat : publier maintenant
                     publish_resp = httpx.post(
-                        f"{META_GRAPH_BASE}/{settings.meta_instagram_account_id}/media_publish",
+                        f"{META_GRAPH_BASE}/{meta_ig_id}/media_publish",
                         params={
                             "creation_id": container_id,
-                            "access_token": settings.meta_page_access_token,
+                            "access_token": meta_token,
                         },
                         timeout=20,
                     )
@@ -125,20 +134,20 @@ async def publish_to_meta(post_id: str, body: PublishPostRequest = None, user_id
             }
 
     # ── Facebook ─────────────────────────────────────────────────────────────
-    if "facebook" in platforms and settings.meta_facebook_page_id:
+    if "facebook" in platforms and meta_fb_page_id:
         if photo_url:
             # Post avec photo
             fb_params = {
                 "url": photo_url,
                 "caption": facebook_text,
-                "access_token": settings.meta_page_access_token,
+                "access_token": meta_token,
             }
             if is_scheduled:
                 fb_params["scheduled_publish_time"] = scheduled_unix
                 fb_params["published"] = "false"
 
             fb_resp = httpx.post(
-                f"{META_GRAPH_BASE}/{settings.meta_facebook_page_id}/photos",
+                f"{META_GRAPH_BASE}/{meta_fb_page_id}/photos",
                 params=fb_params,
                 timeout=20,
             )
@@ -146,14 +155,14 @@ async def publish_to_meta(post_id: str, body: PublishPostRequest = None, user_id
             # Post texte seul
             fb_params = {
                 "message": facebook_text,
-                "access_token": settings.meta_page_access_token,
+                "access_token": meta_token,
             }
             if is_scheduled:
                 fb_params["scheduled_publish_time"] = scheduled_unix
                 fb_params["published"] = "false"
 
             fb_resp = httpx.post(
-                f"{META_GRAPH_BASE}/{settings.meta_facebook_page_id}/feed",
+                f"{META_GRAPH_BASE}/{meta_fb_page_id}/feed",
                 params=fb_params,
                 timeout=20,
             )

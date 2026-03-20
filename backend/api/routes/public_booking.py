@@ -1,12 +1,13 @@
 """
-Public booking endpoint — called by the /reserver page.
+Public booking endpoint — called by the /reserver/[slug] page.
 
+- Looks up the restaurant by slug (or restaurant_id for backwards compat)
 - Creates a reservation with status 'pending' and source 'web'
-- Sends an email notification to the restaurant owner
+- Sends a push notification to the restaurant owner
 - Auto-assigns a table (or leaves unassigned if full — still creates the reservation)
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
@@ -18,7 +19,8 @@ from api.routes.push import send_push_to_restaurant
 
 router = APIRouter()
 
-RESTAURANT_ID = "60945098-cb17-4b47-8771-4b0110ec6d9d"
+# Fallback for backwards compat (ancienne URL /reserver sans slug)
+DEFAULT_RESTAURANT_ID = "60945098-cb17-4b47-8771-4b0110ec6d9d"
 
 
 class PublicBookingRequest(BaseModel):
@@ -40,21 +42,27 @@ class PublicBookingResponse(BaseModel):
     guest_count: int
 
 
-def _send_admin_push_notification(booking: PublicBookingRequest):
-    """Send push notification to the restaurant admin when a new booking arrives."""
-    full_name = f"{booking.guest_first_name} {booking.guest_last_name}".strip()
-    date_str = booking.date.strftime("%d/%m/%Y")
+def _get_restaurant_by_slug_or_id(supabase, slug: Optional[str], restaurant_id: Optional[str]) -> dict:
+    """Lookup restaurant by slug or ID. Raises 404 if not found."""
+    if slug:
+        result = supabase.table("restaurants").select("id, name, slug").eq("slug", slug).limit(1).execute()
+    elif restaurant_id:
+        result = supabase.table("restaurants").select("id, name, slug").eq("id", restaurant_id).limit(1).execute()
+    else:
+        # Fallback: Le 5
+        result = supabase.table("restaurants").select("id, name, slug").eq("id", DEFAULT_RESTAURANT_ID).limit(1).execute()
 
-    send_push_to_restaurant(
-        restaurant_id=RESTAURANT_ID,
-        title=f"Nouvelle réservation — {full_name}",
-        body=f"{booking.guest_count} pers. le {date_str} à {booking.time}. À confirmer.",
-        url="/reservations",
-    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Restaurant introuvable")
+    return result.data[0]
 
 
 @router.post("/public/book", response_model=PublicBookingResponse)
-async def public_book(body: PublicBookingRequest):
+async def public_book(
+    body: PublicBookingRequest,
+    slug: Optional[str] = Query(None),
+    restaurant_id: Optional[str] = Query(None),
+):
     """Public endpoint for clients to request a reservation."""
 
     # Validate
@@ -70,6 +78,10 @@ async def public_book(body: PublicBookingRequest):
 
     supabase = create_client(settings.supabase_url, settings.supabase_service_key)
 
+    # Lookup restaurant
+    restaurant = _get_restaurant_by_slug_or_id(supabase, slug, restaurant_id)
+    rest_id = restaurant["id"]
+
     full_name = f"{body.guest_first_name.strip()} {body.guest_last_name.strip()}".strip()
 
     # Try to auto-assign a table (non-blocking — still accept if no table available)
@@ -77,7 +89,7 @@ async def public_book(body: PublicBookingRequest):
     try:
         assigned_table_id = _auto_assign_table(
             supabase,
-            restaurant_id=RESTAURANT_ID,
+            restaurant_id=rest_id,
             guest_count=body.guest_count,
             res_date=body.date.isoformat(),
             res_time=body.time,
@@ -87,7 +99,7 @@ async def public_book(body: PublicBookingRequest):
         pass
 
     data = {
-        "restaurant_id": RESTAURANT_ID,
+        "restaurant_id": rest_id,
         "table_id": assigned_table_id,
         "guest_name": full_name,
         "guest_phone": body.guest_phone,
@@ -107,7 +119,14 @@ async def public_book(body: PublicBookingRequest):
         raise HTTPException(status_code=500, detail="Erreur lors de la création de la réservation.")
 
     # Send push notification to admin
-    _send_admin_push_notification(body)
+    full_name_display = f"{body.guest_first_name} {body.guest_last_name}".strip()
+    date_str = body.date.strftime("%d/%m/%Y")
+    send_push_to_restaurant(
+        restaurant_id=rest_id,
+        title=f"Nouvelle réservation — {full_name_display}",
+        body=f"{body.guest_count} pers. le {date_str} à {body.time}. À confirmer.",
+        url="/reservations",
+    )
 
     return PublicBookingResponse(
         status="pending",
@@ -116,3 +135,21 @@ async def public_book(body: PublicBookingRequest):
         time=body.time,
         guest_count=body.guest_count,
     )
+
+
+@router.get("/public/restaurant")
+async def get_public_restaurant_info(
+    slug: Optional[str] = Query(None),
+    restaurant_id: Optional[str] = Query(None),
+):
+    """Public endpoint to get restaurant info for the reservation page (name, service hours)."""
+    supabase = create_client(settings.supabase_url, settings.supabase_service_key)
+    restaurant = _get_restaurant_by_slug_or_id(supabase, slug, restaurant_id)
+    rest_id = restaurant["id"]
+
+    # Fetch full restaurant info (only public-safe fields)
+    full = supabase.table("restaurants").select("id, name, slug, service_hours").eq("id", rest_id).single().execute()
+    if not full.data:
+        raise HTTPException(status_code=404, detail="Restaurant introuvable")
+
+    return full.data

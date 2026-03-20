@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Réserver une table — Le 5",
-  description:
-    "Réservez votre table au restaurant Le 5, 5 rue du Général Clergerie, Paris 16e.",
-  openGraph: {
-    title: "Réserver une table — Le 5",
-    description: "Restaurant Le 5 — cuisine bistronomique, Paris 16e",
-    type: "website",
-  },
+  title: "Réserver une table",
+  description: "Réservez votre table en ligne.",
 };
 
 export default function PublicLayout({

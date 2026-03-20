@@ -1,14 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from supabase import create_client
 from core.config import settings
-from core.auth import get_current_user, verify_restaurant_owner
+from core.auth import get_current_user, get_restaurant_for_user
 import httpx
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as GoogleRequest
 
 router = APIRouter(prefix="/google", tags=["google"])
-
-supabase = create_client(settings.supabase_url, settings.supabase_service_key)
 
 SCOPES = ["https://www.googleapis.com/auth/business.manage"]
 GBP_BASE = "https://mybusiness.googleapis.com/v4"
@@ -16,11 +14,15 @@ GBP_BASE = "https://mybusiness.googleapis.com/v4"
 STAR_RATING_MAP = {"ONE": 1, "TWO": 2, "THREE": 3, "FOUR": 4, "FIVE": 5}
 
 
-def _get_access_token() -> str:
-    """Obtient un access token Google frais depuis le refresh token."""
+def _get_supabase():
+    return create_client(settings.supabase_url, settings.supabase_service_key)
+
+
+def _get_access_token(restaurant: dict) -> str:
+    """Obtient un access token Google frais depuis le refresh token du restaurant."""
     creds = Credentials(
         token=None,
-        refresh_token=settings.google_refresh_token,
+        refresh_token=restaurant["google_refresh_token"],
         token_uri="https://oauth2.googleapis.com/token",
         client_id=settings.google_client_id,
         client_secret=settings.google_client_secret,
@@ -30,35 +32,32 @@ def _get_access_token() -> str:
     return creds.token
 
 
-def _check_google_configured():
-    if not settings.google_refresh_token or not settings.google_location_name:
+def _check_google_configured(restaurant: dict):
+    if not restaurant.get("google_refresh_token") or not restaurant.get("google_location_name"):
         raise HTTPException(
             status_code=503,
-            detail="Google Business Profile API non configurée — ajoutez GOOGLE_REFRESH_TOKEN et GOOGLE_LOCATION_NAME dans .env",
+            detail="Google Business Profile API non configurée pour ce restaurant — connectez votre compte Google dans les paramètres",
         )
 
 
 @router.post("/reviews/sync")
 async def sync_google_reviews(user_id: str = Depends(get_current_user)):
     """Récupère les avis Google Business Profile et les sauvegarde dans Supabase."""
-    _check_google_configured()
+    restaurant = await get_restaurant_for_user(user_id)
+    _check_google_configured(restaurant)
 
-    token = _get_access_token()
+    restaurant_id = restaurant["id"]
+    token = _get_access_token(restaurant)
     headers = {"Authorization": f"Bearer {token}"}
 
-    url = f"{GBP_BASE}/{settings.google_location_name}/reviews"
+    url = f"{GBP_BASE}/{restaurant['google_location_name']}/reviews"
     resp = httpx.get(url, headers=headers, timeout=15)
 
     if resp.status_code != 200:
         raise HTTPException(status_code=resp.status_code, detail=f"Google API: {resp.text}")
 
     reviews = resp.json().get("reviews", [])
-
-    # Récupérer l'ID du restaurant (Le 5 = seul restaurant en V1)
-    restaurant = supabase.table("restaurants").select("id").limit(1).execute()
-    if not restaurant.data:
-        raise HTTPException(status_code=404, detail="Aucun restaurant configuré en base")
-    restaurant_id = restaurant.data[0]["id"]
+    supabase = _get_supabase()
 
     new_count = 0
     for review in reviews:
@@ -98,7 +97,10 @@ async def sync_google_reviews(user_id: str = Depends(get_current_user)):
 @router.post("/reviews/{review_id}/publish-response")
 async def publish_google_response(review_id: str, user_id: str = Depends(get_current_user)):
     """Publie la réponse approuvée sur Google Business Profile."""
-    _check_google_configured()
+    restaurant = await get_restaurant_for_user(user_id)
+    _check_google_configured(restaurant)
+
+    supabase = _get_supabase()
 
     # Récupérer l'avis
     review = supabase.table("reviews").select("*").eq("id", review_id).single().execute()
@@ -129,9 +131,9 @@ async def publish_google_response(review_id: str, user_id: str = Depends(get_cur
     response_id = response.data[0]["id"]
 
     # Publier sur Google
-    token = _get_access_token()
+    token = _get_access_token(restaurant)
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    url = f"{GBP_BASE}/{settings.google_location_name}/reviews/{google_review_id}/reply"
+    url = f"{GBP_BASE}/{restaurant['google_location_name']}/reviews/{google_review_id}/reply"
 
     resp = httpx.put(url, headers=headers, json={"comment": response_text}, timeout=15)
 

@@ -504,7 +504,7 @@ def _format_phone_international(phone: str) -> str:
     return cleaned
 
 
-def _send_sms(phone: str, content: str):
+def _send_sms(phone: str, content: str, sender_name: str = "Le 5"):
     """Send a transactional SMS via Brevo API."""
     from core.config import settings
     import httpx
@@ -525,7 +525,7 @@ def _send_sms(phone: str, content: str):
             json={
                 "type": "transactional",
                 "unicodeEnabled": True,
-                "sender": "Le 5",
+                "sender": sender_name[:11],  # Brevo limite à 11 caractères
                 "recipient": recipient,
                 "content": content,
             },
@@ -554,8 +554,29 @@ def _format_date_fr(date_raw: str) -> str:
         return date_raw
 
 
+def _get_restaurant_sms_info(restaurant_id: str) -> dict:
+    """Fetch restaurant name, SMS sender name, and phone for SMS templates."""
+    supabase = get_supabase()
+    result = (
+        supabase.table("restaurants")
+        .select("name, brevo_sms_sender_name, brevo_sms_number, brevo_sms_enabled")
+        .eq("id", restaurant_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        return {"name": "Le restaurant", "brevo_sms_sender_name": "Restaurant", "brevo_sms_number": "", "brevo_sms_enabled": True}
+    return result.data[0]
+
+
 def _send_guest_cancellation(reservation: dict):
     """Send cancellation SMS to the guest via Brevo."""
+    restaurant_id = reservation.get("restaurant_id")
+    rest_info = _get_restaurant_sms_info(restaurant_id)
+
+    if not rest_info.get("brevo_sms_enabled", True):
+        return
+
     guest_phone = reservation.get("guest_phone")
     guest_name = reservation.get("guest_name", "")
     first_name = guest_name.split(" ")[0] if guest_name else ""
@@ -563,18 +584,29 @@ def _send_guest_cancellation(reservation: dict):
     time_raw = (reservation.get("time", "") or "")[:5]
     date_str = _format_date_fr(date_raw)
 
+    rest_name = rest_info.get("name", "Le restaurant")
+    rest_phone = rest_info.get("brevo_sms_number", "")
+    sender = rest_info.get("brevo_sms_sender_name") or rest_name
+
     if guest_phone:
+        phone_part = f" au {rest_phone}" if rest_phone else ""
         sms_body = (
-            f"Bonjour {first_name}, votre reservation au restaurant Le 5 "
+            f"Bonjour {first_name}, votre reservation au restaurant {rest_name} "
             f"du {date_str} a {time_raw} a ete annulee. "
-            f"N'hesitez pas a nous recontacter au 09 83 94 46 00 pour une autre date. "
-            f"A bientot ! L'equipe du 5"
+            f"N'hesitez pas a nous recontacter{phone_part} pour une autre date. "
+            f"A bientot ! L'equipe {rest_name}"
         )
-        _send_sms(guest_phone, sms_body)
+        _send_sms(guest_phone, sms_body, sender_name=sender)
 
 
 def _send_guest_confirmation(reservation: dict):
     """Send confirmation SMS to the guest via Brevo."""
+    restaurant_id = reservation.get("restaurant_id")
+    rest_info = _get_restaurant_sms_info(restaurant_id)
+
+    if not rest_info.get("brevo_sms_enabled", True):
+        return
+
     guest_phone = reservation.get("guest_phone")
     guest_name = reservation.get("guest_name", "")
     first_name = guest_name.split(" ")[0] if guest_name else ""
@@ -583,13 +615,18 @@ def _send_guest_confirmation(reservation: dict):
     guest_count = reservation.get("guest_count", 0)
     date_str = _format_date_fr(date_raw)
 
+    rest_name = rest_info.get("name", "Le restaurant")
+    rest_phone = rest_info.get("brevo_sms_number", "")
+    sender = rest_info.get("brevo_sms_sender_name") or rest_name
+
     if guest_phone:
+        phone_part = f" : {rest_phone}" if rest_phone else ""
         sms_body = (
-            f"Bonjour {first_name}, votre reservation au restaurant Le 5 est confirmee : "
+            f"Bonjour {first_name}, votre reservation au restaurant {rest_name} est confirmee : "
             f"{date_str} a {time_raw} pour {guest_count} personne{'s' if guest_count > 1 else ''}. "
-            f"Pour toute modification : 09 83 94 46 00. A bientot ! L'equipe du 5"
+            f"Pour toute modification{phone_part}. A bientot ! L'equipe {rest_name}"
         )
-        _send_sms(guest_phone, sms_body)
+        _send_sms(guest_phone, sms_body, sender_name=sender)
 
 
 @router.post("/{reservation_id}/no-show", response_model=Reservation)

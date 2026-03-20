@@ -23,22 +23,18 @@ class Settings(BaseSettings):
     vapid_public_key: str = ""
     vapid_private_key: str = ""
     vapid_claims_email: str = "contact@glghospitality.com"
-    # Google Business Profile API (OAuth2)
+    # Google Business Profile API (OAuth2 — app-level credentials)
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_refresh_token: str = ""
-    google_location_name: str = ""  # ex: accounts/123456789/locations/987654321
-    # Meta Graph API (Instagram + Facebook)
-    meta_page_access_token: str = ""
-    meta_instagram_account_id: str = ""
-    meta_instagram_id: str = ""
-    meta_facebook_page_id: str = ""
+    # Note: google_refresh_token et google_location_name sont maintenant per-restaurant en BDD
+    # Meta Graph API (app-level credentials)
     meta_app_id: str = ""
     meta_app_secret: str = ""
-    meta_page_id: str = ""
+    # Note: meta_page_access_token, meta_instagram_id, meta_page_id sont maintenant per-restaurant en BDD
 
     class Config:
         env_file = str(BASE_DIR / ".env")
+        extra = "ignore"  # Ignorer les variables .env non déclarées (tokens per-restaurant migrés en BDD)
 
 
 settings = Settings()
