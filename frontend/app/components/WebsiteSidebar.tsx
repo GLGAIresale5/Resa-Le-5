@@ -81,8 +81,8 @@ export default function WebsiteSidebar() {
               priority
             />
             <div className="text-center mt-1">
-              <p className="text-[#c9a96e] font-serif text-xl tracking-[0.3em]">LE 5</p>
-              <p className="text-[#8a8072] text-[11px] tracking-[0.25em] mt-1">BAR · TAPAS · BRASSERIE</p>
+              <p className="text-[#c9a96e] font-serif text-xl tracking-[0.3em] ml-[0.3em]">LE 5</p>
+              <p className="text-[#8a8072] text-[10px] tracking-[0.2em] mt-1.5 uppercase font-light ml-[0.2em]">Bar · Tapas · Brasserie</p>
             </div>
           </Link>
         </div>
