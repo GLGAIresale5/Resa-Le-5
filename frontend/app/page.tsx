@@ -108,8 +108,8 @@ export default function HomePage() {
           </div>
           <div className="relative aspect-square rounded-lg overflow-hidden">
             <Image
-              src="/images/skull-bar.jpg"
-              alt="Ambiance bar Le 5"
+              src="/images/terrasse-nuit.jpg"
+              alt="Terrasse du 5 de nuit"
               fill
               className="object-cover hover:scale-105 transition-transform duration-700"
             />
