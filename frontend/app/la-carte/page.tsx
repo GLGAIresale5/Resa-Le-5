@@ -1,15 +1,12 @@
-import type { Metadata } from "next";
-import WebsiteLayout from "../components/WebsiteLayout";
+"use client";
 
-export const metadata: Metadata = {
-  title: "La Carte",
-  description: "Découvrez la carte du restaurant Le 5 : petit-déjeuner, tapas, brasserie, cocktails et vins.",
-};
+import { useEffect, useState, useRef } from "react";
+import WebsiteLayout from "../components/WebsiteLayout";
 
 /* ---------- DATA ---------- */
 
 type Item = { name: string; desc?: string; price: string; bold?: boolean };
-type Category = { title: string; subtitle?: string; items: Item[] };
+type Category = { title: string; subtitle?: string; priceHeader?: string; items: Item[] };
 type Section = { id: string; label: string; categories: Category[] };
 
 const sections: Section[] = [
@@ -91,11 +88,12 @@ const sections: Section[] = [
       {
         title: "Bières Pression",
         subtitle: "Brasserie Deck & Donohue",
+        priceHeader: "25cl · 50cl",
         items: [
-          { name: "Velvet Smash — IPA", price: "5,00€ / 8,50€", desc: "25cl / 50cl" },
-          { name: "Métro — Lager", price: "4,50€ / 7,50€", desc: "25cl / 50cl" },
-          { name: "Platine — Blanche", price: "4,50€ / 7,50€", desc: "25cl / 50cl" },
-          { name: "Cidre Pression", price: "4,50€ / 7,50€", desc: "25cl / 50cl" },
+          { name: "Velvet Smash — IPA", price: "5,00€ · 8,50€" },
+          { name: "Métro — Lager", price: "4,50€ · 7,50€" },
+          { name: "Platine — Blanche", price: "4,50€ · 7,50€" },
+          { name: "Cidre Pression", price: "4,50€ · 7,50€" },
         ],
       },
     ],
@@ -106,35 +104,39 @@ const sections: Section[] = [
     categories: [
       {
         title: "Vins Blancs",
+        priceHeader: "Verre · Bouteille",
         items: [
-          { name: "Viognier — Pays d'Oc", price: "5,00€ · 22,00€", desc: "Verre · Bouteille" },
-          { name: "Chardonnay — Bourgogne", price: "6,00€ · 28,00€", desc: "Verre · Bouteille" },
-          { name: "Colombelle — Côtes de Gascogne", price: "5,00€ · 22,00€", desc: "Verre · Bouteille" },
-          { name: "Sancerre", price: "8,00€ · 38,00€", desc: "Verre · Bouteille" },
-          { name: "Chablis", price: "9,00€ · 45,00€", desc: "Verre · Bouteille" },
+          { name: "Viognier — Pays d'Oc", price: "5,00€ · 22,00€" },
+          { name: "Chardonnay — Bourgogne", price: "6,00€ · 28,00€" },
+          { name: "Colombelle — Côtes de Gascogne", price: "5,00€ · 22,00€" },
+          { name: "Sancerre", price: "8,00€ · 38,00€" },
+          { name: "Chablis", price: "9,00€ · 45,00€" },
         ],
       },
       {
         title: "Vins Rosés",
+        priceHeader: "Verre · Bouteille",
         items: [
-          { name: "Gris de Gris — Sable de Camargue", price: "5,00€ · 22,00€", desc: "Verre · Bouteille" },
-          { name: "Cavalier 360 — Côtes de Provence", price: "7,50€ · 35,00€", desc: "Verre · Bouteille" },
+          { name: "Gris de Gris — Sable de Camargue", price: "5,00€ · 22,00€" },
+          { name: "Cavalier 360 — Côtes de Provence", price: "7,50€ · 35,00€" },
         ],
       },
       {
         title: "Vins Rouges",
+        priceHeader: "Verre · Bouteille",
         items: [
-          { name: "Merlot — Pays d'Oc", price: "5,00€ · 22,00€", desc: "Verre · Bouteille" },
-          { name: "Pinot Noir — Bourgogne", price: "5,50€ · 25,00€", desc: "Verre · Bouteille" },
-          { name: "Côtes du Rhône", price: "6,00€ · 28,00€", desc: "Verre · Bouteille" },
-          { name: "Saint-Émilion Grand Cru", price: "9,00€ · 49,00€", desc: "Verre · Bouteille" },
+          { name: "Merlot — Pays d'Oc", price: "5,00€ · 22,00€" },
+          { name: "Pinot Noir — Bourgogne", price: "5,50€ · 25,00€" },
+          { name: "Côtes du Rhône", price: "6,00€ · 28,00€" },
+          { name: "Saint-Émilion Grand Cru", price: "9,00€ · 49,00€" },
         ],
       },
       {
         title: "Champagnes",
+        priceHeader: "Coupe · Bouteille",
         items: [
-          { name: "EPC — Champagne Maison", price: "12,00€ · 50,00€", desc: "Coupe · Bouteille" },
-          { name: "EPC Rosé", price: "14,00€ · 80,00€", desc: "Coupe · Bouteille" },
+          { name: "EPC — Champagne Maison", price: "12,00€ · 50,00€" },
+          { name: "EPC Rosé", price: "14,00€ · 80,00€" },
           { name: "François Dauderet", price: "9,00€", desc: "Coupe" },
           { name: "Ruinart", price: "95,00€", desc: "Bouteille" },
         ],
@@ -147,7 +149,7 @@ const sections: Section[] = [
     categories: [
       {
         title: "Cocktails Classiques",
-        subtitle: "Simple · Double",
+        priceHeader: "Simple · Double",
         items: [
           { name: "Spritz", price: "9,00€ · 16,00€" },
           { name: "Pina Colada", price: "10,00€ · 17,00€" },
@@ -165,6 +167,7 @@ const sections: Section[] = [
       },
       {
         title: "Cocktails Signatures",
+        priceHeader: "Simple · Double",
         items: [
           { name: "Le 5", desc: "Notre cocktail signature", price: "10,00€ · 18,00€", bold: true },
           { name: "Patron Paloma", price: "12,00€ · 20,00€" },
@@ -183,7 +186,7 @@ const sections: Section[] = [
       },
       {
         title: "Shooters",
-        subtitle: "Shot · Demi-mètre · Mètre",
+        priceHeader: "Shot · ½ mètre · Mètre",
         items: [
           { name: "Classiques", desc: "B52, Kamikaze, Tequila Paf...", price: "4,00€ · 15,00€ · 28,00€" },
           { name: "Premium", desc: "Jägermeister, Jack Daniel's...", price: "5,50€ · 20,00€ · 35,00€" },
@@ -311,76 +314,128 @@ const sections: Section[] = [
 /* ---------- COMPONENT ---------- */
 
 export default function LaCartePage() {
+  const [activeSection, setActiveSection] = useState(sections[0].id);
+  const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Intersection Observer to track which section is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the entry with the largest intersection ratio
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible.length > 0 && visible[0].target.id) {
+          setActiveSection(visible[0].target.id);
+        }
+      },
+      { rootMargin: "-20% 0px -60% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] }
+    );
+
+    sectionRefs.current.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <WebsiteLayout><div className="min-h-screen">
-      {/* Header */}
-      <div className="px-6 py-16 md:px-12 text-center">
-        <h1 className="font-serif text-4xl md:text-5xl text-[#e8e0d4] mb-3">La Carte</h1>
-        <p className="text-[#8a8072] text-sm tracking-[0.2em] uppercase">Carte 2026</p>
-      </div>
-
-      {/* Tab navigation */}
-      <nav className="sticky top-16 lg:top-0 z-30 bg-[#111111]/95 backdrop-blur-md border-b border-[#1a1a1a]">
-        <div className="flex overflow-x-auto no-scrollbar px-6 md:px-12">
-          {sections.map((s) => (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              className="shrink-0 px-5 py-4 text-sm text-[#8a8072] hover:text-[#c9a96e] transition-colors tracking-wide border-b-2 border-transparent hover:border-[#c9a96e]/30"
-            >
-              {s.label}
-            </a>
-          ))}
+    <WebsiteLayout>
+      <div className="min-h-screen">
+        {/* Header */}
+        <div className="px-6 py-16 md:px-12 text-center">
+          <h1 className="font-serif text-4xl md:text-5xl text-[#e8e0d4] mb-3">La Carte</h1>
+          <p className="text-[#8a8072] text-sm tracking-[0.2em] uppercase">Carte 2026</p>
         </div>
-      </nav>
 
-      {/* Menu content */}
-      <div className="px-6 md:px-12 py-12 max-w-3xl">
-        {sections.map((section) => (
-          <div key={section.id} id={section.id} className="mb-16 scroll-mt-32 lg:scroll-mt-16">
-            <h2 className="font-serif text-3xl text-[#c9a96e] mb-8">{section.label}</h2>
-            {section.categories.map((cat, ci) => (
-              <div key={ci} className="mb-10">
-                <div className="mb-4">
-                  <h3 className="text-lg text-[#e8e0d4] font-medium tracking-wide">{cat.title}</h3>
-                  {cat.subtitle && (
-                    <p className="text-xs text-[#5a5550] mt-1">{cat.subtitle}</p>
-                  )}
-                </div>
-                <div className="space-y-0">
-                  {cat.items.map((item, ii) => (
-                    <div
-                      key={ii}
-                      className={`flex justify-between gap-4 py-3 border-b border-[#1a1a1a] ${
-                        item.bold ? "bg-[#c9a96e]/5 -mx-3 px-3 rounded" : ""
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className={`${item.bold ? "text-[#c9a96e] font-medium" : "text-[#e8e0d4]"}`}>
-                          {item.name}
-                        </p>
-                        {item.desc && (
-                          <p className="text-[#6a6560] text-sm mt-0.5">{item.desc}</p>
-                        )}
-                      </div>
-                      <span className="text-[#c9a96e] text-sm whitespace-nowrap shrink-0 pt-0.5">
-                        {item.price}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* Tab navigation */}
+        <nav className="sticky top-16 lg:top-0 z-30 bg-[#111111]/95 backdrop-blur-md border-b border-[#1a1a1a]">
+          <div className="flex overflow-x-auto no-scrollbar px-6 md:px-12 justify-center">
+            {sections.map((s) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                className={`shrink-0 px-5 py-4 text-sm tracking-wide transition-colors border-b-2 ${
+                  activeSection === s.id
+                    ? "text-[#c9a96e] border-[#c9a96e]"
+                    : "text-[#8a8072] border-transparent hover:text-[#c9a96e] hover:border-[#c9a96e]/30"
+                }`}
+              >
+                {s.label}
+              </a>
             ))}
           </div>
-        ))}
-      </div>
+        </nav>
 
-      {/* Footer note */}
-      <div className="px-6 md:px-12 pb-16 max-w-3xl">
-        <p className="text-[#5a5550] text-xs text-center">
-          Prix nets en euros, taxes et service compris. L&apos;abus d&apos;alcool est dangereux pour la santé.
-        </p>
+        {/* Menu content — centered */}
+        <div className="px-6 md:px-12 py-12 max-w-3xl mx-auto">
+          {sections.map((section) => (
+            <div
+              key={section.id}
+              id={section.id}
+              className="mb-16 scroll-mt-32 lg:scroll-mt-16"
+              ref={(el) => {
+                if (el) sectionRefs.current.set(section.id, el);
+              }}
+            >
+              <h2 className="font-serif text-3xl text-[#c9a96e] mb-8">{section.label}</h2>
+              {section.categories.map((cat, ci) => (
+                <div key={ci} className="mb-10">
+                  {/* Category header */}
+                  <div className="mb-4">
+                    <div className="flex justify-between items-baseline">
+                      <div>
+                        <h3 className="text-lg text-[#e8e0d4] font-medium tracking-wide">{cat.title}</h3>
+                        {cat.subtitle && (
+                          <p className="text-xs text-[#5a5550] mt-1">{cat.subtitle}</p>
+                        )}
+                      </div>
+                      {cat.priceHeader && (
+                        <span className="text-xs text-[#8a8072] italic tracking-wide shrink-0 ml-4">
+                          {cat.priceHeader}
+                        </span>
+                      )}
+                    </div>
+                    {/* Separator line under header */}
+                    <div className="mt-3 border-b border-[#2a2a2a]" />
+                  </div>
+
+                  {/* Items */}
+                  <div className="space-y-0">
+                    {cat.items.map((item, ii) => (
+                      <div
+                        key={ii}
+                        className={`flex justify-between gap-4 py-3 border-b border-[#1a1a1a] ${
+                          item.bold ? "bg-[#c9a96e]/5 -mx-3 px-3 rounded" : ""
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className={`${item.bold ? "text-[#c9a96e] font-medium" : "text-[#e8e0d4]"}`}>
+                            {item.name}
+                          </p>
+                          {item.desc && !cat.priceHeader && (
+                            <p className="text-[#6a6560] text-sm mt-0.5">{item.desc}</p>
+                          )}
+                          {item.desc && cat.priceHeader && (
+                            <p className="text-[#6a6560] text-sm mt-0.5">{item.desc}</p>
+                          )}
+                        </div>
+                        <span className="text-[#c9a96e] text-sm whitespace-nowrap shrink-0 pt-0.5">
+                          {item.price}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer note */}
+        <div className="px-6 md:px-12 pb-16 max-w-3xl mx-auto">
+          <p className="text-[#5a5550] text-xs text-center">
+            Prix nets en euros, taxes et service compris. L&apos;abus d&apos;alcool est dangereux pour la santé.
+          </p>
+        </div>
       </div>
-    </div></WebsiteLayout>
+    </WebsiteLayout>
   );
 }
