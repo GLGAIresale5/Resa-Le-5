@@ -15,6 +15,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
         # Production
+        "https://le-5.vercel.app",
         "https://resa-le-5.vercel.app",
         "https://le5.glg-ai.com",
         "https://glg-ai.vercel.app",
