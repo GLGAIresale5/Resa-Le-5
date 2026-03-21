@@ -28,28 +28,6 @@ export default function LeRestaurantPage() {
         </div>
       </section>
 
-      {/* Story */}
-      <section className="px-6 py-20 md:px-12 max-w-3xl">
-        <h2 className="font-serif text-3xl text-[#e8e0d4] mb-8">Notre Histoire</h2>
-        <div className="space-y-5 text-[#b0a899] leading-relaxed text-lg">
-          <p>
-            Le 5, c&apos;est une affaire de famille. Installé au 4 place du village à Sucy-en-Brie,
-            le restaurant est né d&apos;une envie simple : créer un lieu où l&apos;on vient bien manger
-            et bien boire, dans une ambiance soignée mais détendue.
-          </p>
-          <p>
-            Baptiste et Géry, père et fils, sont aux commandes. Géry est le visage du restaurant —
-            en salle comme en cuisine, il assure une présence chaleureuse et attentive. Baptiste gère
-            les coulisses : fournisseurs, stratégie, et le développement de ce lieu qui leur ressemble.
-          </p>
-          <p>
-            L&apos;esprit du 5 ? Une brasserie de style parisien, classe mais accessible. On y sert
-            des plats de brasserie bien exécutés, des tapas à partager, et des cocktails signatures
-            préparés avec soin.
-          </p>
-        </div>
-      </section>
-
       {/* Photos */}
       <section className="px-6 md:px-12 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
