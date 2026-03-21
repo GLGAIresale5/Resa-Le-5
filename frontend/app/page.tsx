@@ -11,7 +11,7 @@ const hours = [
   { day: "Lundi", value: "Fermé", closed: true },
   { day: "Mardi", value: "7h – 22h" },
   { day: "Mercredi", value: "7h – 22h" },
-  { day: "Jeudi", value: "7h – Minuit" },
+  { day: "Jeudi", value: "7h – 00h" },
   { day: "Vendredi", value: "7h – 2h" },
   { day: "Samedi", value: "7h – 2h" },
   { day: "Dimanche", value: "7h – 15h" },
