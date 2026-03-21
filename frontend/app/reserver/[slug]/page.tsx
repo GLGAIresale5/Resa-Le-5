@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
+import WebsiteLayout from "../../components/WebsiteLayout";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -149,23 +150,23 @@ export default function ReserverSlugPage() {
   // ─── Loading ───
   if (step === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-stone-900" />
-      </div>
+      <WebsiteLayout><div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#2a2a2a] border-t-[#c9a96e]" />
+      </div></WebsiteLayout>
     );
   }
 
   // ─── Not found ───
   if (step === "not_found") {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
+      <WebsiteLayout><div className="flex min-h-screen items-center justify-center px-4">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-stone-900">Restaurant introuvable</h2>
-          <p className="mt-2 text-sm text-stone-500">
+          <h2 className="text-xl font-semibold text-[#e8e0d4]">Restaurant introuvable</h2>
+          <p className="mt-2 text-sm text-[#8a8072]">
             Ce lien de réservation n&apos;est pas valide.
           </p>
         </div>
-      </div>
+      </div></WebsiteLayout>
     );
   }
 
@@ -174,31 +175,31 @@ export default function ReserverSlugPage() {
   // ─── Success screen ───
   if (step === "success") {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
+      <WebsiteLayout><div className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#c9a96e]/20">
+            <svg className="h-8 w-8 text-[#c9a96e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-stone-900">Demande envoyée !</h2>
-          <p className="mt-3 text-stone-600 leading-relaxed">
+          <h2 className="text-2xl font-semibold text-[#e8e0d4]">Demande envoyée !</h2>
+          <p className="mt-3 text-[#8a8072] leading-relaxed">
             Votre demande de réservation a bien été reçue.<br />
             Nous vous confirmerons votre table par {email ? "email" : "téléphone"} dans les plus brefs délais.
           </p>
-          <div className="mt-8 rounded-xl bg-white p-5 text-left shadow-sm border border-stone-200">
+          <div className="mt-8 rounded-xl bg-[#1a1a1a] p-5 text-left border border-[#2a2a2a]">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <p className="text-stone-400">Nom</p>
-                <p className="font-medium text-stone-800">{firstName} {lastName}</p>
+                <p className="text-[#5a5550]">Nom</p>
+                <p className="font-medium text-[#e8e0d4]">{firstName} {lastName}</p>
               </div>
               <div>
-                <p className="text-stone-400">Couverts</p>
-                <p className="font-medium text-stone-800">{guestCount} {guestCount > 1 ? "personnes" : "personne"}</p>
+                <p className="text-[#5a5550]">Couverts</p>
+                <p className="font-medium text-[#e8e0d4]">{guestCount} {guestCount > 1 ? "personnes" : "personne"}</p>
               </div>
               <div>
-                <p className="text-stone-400">Date</p>
-                <p className="font-medium text-stone-800">
+                <p className="text-[#5a5550]">Date</p>
+                <p className="font-medium text-[#e8e0d4]">
                   {new Date(date + "T12:00:00").toLocaleDateString("fr-FR", {
                     weekday: "long",
                     day: "numeric",
@@ -207,8 +208,8 @@ export default function ReserverSlugPage() {
                 </p>
               </div>
               <div>
-                <p className="text-stone-400">Heure</p>
-                <p className="font-medium text-stone-800">{time}</p>
+                <p className="text-[#5a5550]">Heure</p>
+                <p className="font-medium text-[#e8e0d4]">{time}</p>
               </div>
             </div>
           </div>
@@ -224,45 +225,45 @@ export default function ReserverSlugPage() {
               setTime(slots[Math.floor(slots.length / 3)] || "");
               setNotes("");
             }}
-            className="mt-6 text-sm text-stone-500 underline underline-offset-2 hover:text-stone-700 transition-colors"
+            className="mt-6 text-sm text-[#8a8072] underline underline-offset-2 hover:text-[#c9a96e] transition-colors"
           >
             Faire une autre réservation
           </button>
         </div>
-      </div>
+      </div></WebsiteLayout>
     );
   }
 
   // ─── Form ───
   return (
-    <div className="flex min-h-screen flex-col">
+    <WebsiteLayout><div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="border-b border-stone-200 bg-white">
+      <header className="border-b border-[#2a2a2a]">
         <div className="mx-auto flex max-w-lg items-center justify-between px-5 py-4">
           <div>
-            <h1 className="text-lg font-semibold text-stone-900 tracking-tight">{restName}</h1>
+            <h1 className="text-lg font-semibold text-[#e8e0d4] tracking-tight">{restName}</h1>
           </div>
         </div>
       </header>
 
       {/* Form */}
       <main className="mx-auto w-full max-w-lg flex-1 px-5 py-6">
-        <h2 className="text-xl font-semibold text-stone-900">Réserver une table</h2>
-        <p className="mt-1 text-sm text-stone-500">
+        <h2 className="text-xl font-semibold text-[#e8e0d4]">Réserver une table</h2>
+        <p className="mt-1 text-sm text-[#8a8072]">
           Votre réservation sera confirmée par notre équipe.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
           {/* Error */}
           {(errorMsg || step === "error") && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-lg bg-red-900/30 border border-red-800/50 px-4 py-3 text-sm text-red-300">
               {errorMsg || "Une erreur est survenue. Veuillez réessayer."}
             </div>
           )}
 
           {/* Guest count */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">
+            <label className="block text-sm font-medium text-[#b0a899] mb-2">
               Nombre de convives
             </label>
             <div className="flex flex-wrap gap-2">
@@ -273,8 +274,8 @@ export default function ReserverSlugPage() {
                   onClick={() => setGuestCount(n)}
                   className={`h-10 w-10 rounded-lg border text-sm font-medium transition-all ${
                     guestCount === n
-                      ? "border-stone-900 bg-stone-900 text-white"
-                      : "border-stone-200 bg-white text-stone-600 hover:border-stone-400"
+                      ? "border-[#c9a96e] bg-[#c9a96e] text-[#111111]"
+                      : "border-[#2a2a2a] bg-[#1a1a1a] text-[#b0a899] hover:border-[#3a3a3a]"
                   }`}
                 >
                   {n}
@@ -285,8 +286,8 @@ export default function ReserverSlugPage() {
                 onClick={() => setGuestCount(guestCount > 8 ? guestCount : 9)}
                 className={`h-10 rounded-lg border px-3 text-sm font-medium transition-all ${
                   guestCount > 8
-                    ? "border-stone-900 bg-stone-900 text-white"
-                    : "border-stone-200 bg-white text-stone-600 hover:border-stone-400"
+                    ? "border-[#c9a96e] bg-[#c9a96e] text-[#111111]"
+                    : "border-[#2a2a2a] bg-[#1a1a1a] text-[#b0a899] hover:border-[#3a3a3a]"
                 }`}
               >
                 9+
@@ -299,28 +300,28 @@ export default function ReserverSlugPage() {
                 max={30}
                 value={guestCount}
                 onChange={(e) => setGuestCount(Math.max(9, parseInt(e.target.value) || 9))}
-                className="mt-2 w-24 rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-400"
+                className="mt-2 w-24 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm text-[#e8e0d4] focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50"
               />
             )}
           </div>
 
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">Date</label>
+            <label className="block text-sm font-medium text-[#b0a899] mb-2">Date</label>
             <input
               type="date"
               required
               min={minDate}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-400"
+              className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e8e0d4] focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50"
             />
           </div>
 
           {/* Service toggle */}
           {services.length > 1 && (
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">Service</label>
+              <label className="block text-sm font-medium text-[#b0a899] mb-2">Service</label>
               <div className="flex gap-2">
                 {services.map((svc, idx) => (
                   <button
@@ -334,8 +335,8 @@ export default function ReserverSlugPage() {
                     }}
                     className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-all ${
                       serviceIndex === idx
-                        ? "border-stone-900 bg-stone-900 text-white"
-                        : "border-stone-200 bg-white text-stone-600 hover:border-stone-400"
+                        ? "border-[#c9a96e] bg-[#c9a96e] text-[#111111]"
+                        : "border-[#2a2a2a] bg-[#1a1a1a] text-[#b0a899] hover:border-[#3a3a3a]"
                     }`}
                   >
                     {svc.name}
@@ -347,7 +348,7 @@ export default function ReserverSlugPage() {
 
           {/* Time slots */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">Heure</label>
+            <label className="block text-sm font-medium text-[#b0a899] mb-2">Heure</label>
             <div className="flex flex-wrap gap-2">
               {slots.map((t) => (
                 <button
@@ -356,8 +357,8 @@ export default function ReserverSlugPage() {
                   onClick={() => setTime(t)}
                   className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
                     time === t
-                      ? "border-stone-900 bg-stone-900 text-white"
-                      : "border-stone-200 bg-white text-stone-600 hover:border-stone-400"
+                      ? "border-[#c9a96e] bg-[#c9a96e] text-[#111111]"
+                      : "border-[#2a2a2a] bg-[#1a1a1a] text-[#b0a899] hover:border-[#3a3a3a]"
                   }`}
                 >
                   {t}
@@ -369,52 +370,52 @@ export default function ReserverSlugPage() {
           {/* Name */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">Prénom *</label>
+              <label className="block text-sm font-medium text-[#b0a899] mb-1.5">Prénom *</label>
               <input
                 required
                 placeholder="Jean"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
+                className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e8e0d4] placeholder-[#5a5550] focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">Nom</label>
+              <label className="block text-sm font-medium text-[#b0a899] mb-1.5">Nom</label>
               <input
                 placeholder="Dupont"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
+                className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e8e0d4] placeholder-[#5a5550] focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50"
               />
             </div>
           </div>
 
           {/* Contact */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">Téléphone *</label>
+            <label className="block text-sm font-medium text-[#b0a899] mb-1.5">Téléphone *</label>
             <input
               type="tel"
               required
               placeholder="06 12 34 56 78"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
+              className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e8e0d4] placeholder-[#5a5550] focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-[#b0a899] mb-1.5">Email</label>
             <input
               type="email"
               placeholder="jean@exemple.fr"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
+              className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e8e0d4] placeholder-[#5a5550] focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            <label className="block text-sm font-medium text-[#b0a899] mb-1.5">
               Demandes particulières
             </label>
             <textarea
@@ -422,7 +423,7 @@ export default function ReserverSlugPage() {
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 resize-none"
+              className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e8e0d4] placeholder-[#5a5550] focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/50 resize-none"
             />
           </div>
 
@@ -430,12 +431,12 @@ export default function ReserverSlugPage() {
           <button
             type="submit"
             disabled={step === "sending"}
-            className="w-full rounded-lg bg-stone-900 py-3.5 text-sm font-semibold text-white hover:bg-stone-800 transition-colors disabled:opacity-50"
+            className="w-full rounded-lg bg-[#c9a96e] py-3.5 text-sm font-semibold text-[#111111] hover:bg-[#d4b87d] transition-colors disabled:opacity-50"
           >
             {step === "sending" ? "Envoi en cours..." : "Demander une réservation"}
           </button>
 
-          <p className="text-center text-xs text-stone-400 leading-relaxed">
+          <p className="text-center text-xs text-[#5a5550] leading-relaxed">
             Votre réservation sera confirmée par notre équipe.<br />
             Pour toute urgence, appelez-nous directement.
           </p>
@@ -443,9 +444,9 @@ export default function ReserverSlugPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-stone-200 bg-white py-4 text-center text-xs text-stone-400">
+      <footer className="border-t border-[#2a2a2a] py-4 text-center text-xs text-[#5a5550]">
         {restName}
       </footer>
-    </div>
+    </div></WebsiteLayout>
   );
 }

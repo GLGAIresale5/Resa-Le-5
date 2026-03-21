@@ -2,17 +2,13 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Réserver une table",
-  description: "Réservez votre table en ligne.",
+  description: "Réservez votre table au restaurant Le 5, bar tapas brasserie à Sucy-en-Brie.",
 };
 
-export default function PublicLayout({
+export default function ReserverLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen bg-stone-50">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
