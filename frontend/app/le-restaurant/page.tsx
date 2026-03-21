@@ -76,11 +76,6 @@ export default function LeRestaurantPage() {
         <h2 className="font-serif text-3xl text-[#e8e0d4] mb-8">L&apos;Ambiance</h2>
         <div className="space-y-5 text-[#b0a899] leading-relaxed text-lg">
           <p>
-            La salle du 5 mêle l&apos;élégance d&apos;une brasserie parisienne et la convivialité
-            d&apos;un bar de quartier. Un grand comptoir en bois, des étagères garnies de spiritueux,
-            et une atmosphère tamisée qui invite à s&apos;installer.
-          </p>
-          <p>
             Aux beaux jours, la terrasse s&apos;ouvre sur la place du village — l&apos;endroit idéal
             pour un apéritif au soleil ou un dîner en plein air.
           </p>
