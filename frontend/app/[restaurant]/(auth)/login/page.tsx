@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "../../../lib/supabase";
-import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -90,12 +89,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-zinc-500">
-          Pas encore de compte ?{" "}
-          <Link href={`/${slug}/register`} className="font-medium text-zinc-900 hover:underline">
-            Créer un compte
-          </Link>
-        </p>
       </div>
     </div>
   );

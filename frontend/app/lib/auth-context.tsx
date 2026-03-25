@@ -14,6 +14,7 @@ interface Restaurant {
   name: string;
   slug?: string;
   service_hours?: ServiceHoursConfig | null;
+  modules?: string[];
 }
 
 interface AuthContextType {

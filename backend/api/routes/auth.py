@@ -46,7 +46,7 @@ class RegisterRestaurantRequest(BaseModel):
 async def me(user_id: str = Depends(get_current_user)):
     """Return the current user's restaurant."""
     sb = get_supabase()
-    result = sb.table("restaurants").select("id, name, slug, service_hours").eq("owner_id", user_id).execute()
+    result = sb.table("restaurants").select("id, name, slug, service_hours, modules").eq("owner_id", user_id).execute()
     if not result.data:
         return {"user_id": user_id, "restaurant": None}
     return {"user_id": user_id, "restaurant": result.data[0]}
