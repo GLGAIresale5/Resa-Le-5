@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { PostCaptions, PublishAlert } from "../../types";
-import { generatePost, approvePost, publishPost, fetchPublishAlerts } from "../../lib/api";
-import { useAuth } from "../../lib/auth-context";
+import { PostCaptions, PublishAlert } from "../../../types";
+import { generatePost, approvePost, publishPost, fetchPublishAlerts } from "../../../lib/api";
+import { useAuth } from "../../../lib/auth-context";
 
 const PLATFORMS = [
   { id: "instagram", label: "Instagram" },

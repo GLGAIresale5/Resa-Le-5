@@ -9,7 +9,7 @@ import {
   ChatMessage,
   DeliveryScanResult,
   ScannedDeliveryItem,
-} from "../../types";
+} from "../../../types";
 import {
   fetchStockItems,
   createStockItem,
@@ -22,8 +22,8 @@ import {
   createDelivery,
   fetchOrderList,
   stockAgentChat,
-} from "../../lib/api";
-import { useAuth } from "../../lib/auth-context";
+} from "../../../lib/api";
+import { useAuth } from "../../../lib/auth-context";
 
 type Tab = "stocks" | "commande" | "agent";
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "../../lib/auth-context";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useAuth } from "../../../lib/auth-context";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -27,6 +27,8 @@ export default function ParametresPage() {
   const { restaurant, user, session, signOut } = useAuth();
   const RESTAURANT_ID = restaurant?.id ?? "";
   const router = useRouter();
+  const params = useParams();
+  const slug = params.restaurant as string;
   const searchParams = useSearchParams();
   const [pushStatus, setPushStatus] = useState<"loading" | "active" | "inactive" | "denied" | "unsupported">("loading");
   const [subscribing, setSubscribing] = useState(false);
@@ -205,7 +207,7 @@ export default function ParametresPage() {
               </div>
             </div>
             <button
-              onClick={async () => { await signOut(); router.push("/login"); }}
+              onClick={async () => { await signOut(); router.push(`/${slug}/login`); }}
               className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
             >
               Déconnexion
@@ -261,7 +263,7 @@ export default function ParametresPage() {
                 IG
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-900">Instagram & Facebook</p>
+                <p className="text-sm font-medium text-zinc-900">Meta</p>
                 <p className="text-xs text-zinc-500">
                   {oauthStatus?.meta.connected
                     ? "Connecté — publication automatique disponible"

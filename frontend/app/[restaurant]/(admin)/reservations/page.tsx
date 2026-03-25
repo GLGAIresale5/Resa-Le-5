@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import FloorPlan from "../../components/FloorPlan";
-import ReservationForm from "../../components/ReservationForm";
+import FloorPlan from "../../../components/FloorPlan";
+import ReservationForm from "../../../components/ReservationForm";
 import {
   fetchFloorPlans,
   createFloorPlan,
@@ -19,9 +19,10 @@ import {
   updateTable,
   createTable,
   deleteTable,
-} from "../../lib/api";
-import { FloorPlan as FloorPlanType, RestaurantTable, Reservation, ReservationCreate } from "../../types";
-import { useAuth } from "../../lib/auth-context";
+  updateServiceHours,
+} from "../../../lib/api";
+import { FloorPlan as FloorPlanType, RestaurantTable, Reservation, ReservationCreate } from "../../../types";
+import { useAuth } from "../../../lib/auth-context";
 
 const MERGE_THRESHOLD = 9; // % distance center-to-center to consider tables adjacent
 
@@ -145,7 +146,7 @@ interface ServiceConfig {
   endTime: string;   // "HH:MM"
 }
 
-const DEFAULT_SERVICES: ServiceConfig[] = [
+const FALLBACK_SERVICES: ServiceConfig[] = [
   { id: "midi", name: "Midi", startTime: "12:00", endTime: "15:30" },
   { id: "soir", name: "Soir", startTime: "19:00", endTime: "23:30" },
 ];
@@ -155,19 +156,17 @@ function timeToMinutes(t: string): number {
   return h * 60 + m;
 }
 
-function loadServices(): ServiceConfig[] {
-  try {
-    const stored = localStorage.getItem("glg_services");
-    return stored ? JSON.parse(stored) : DEFAULT_SERVICES;
-  } catch { return DEFAULT_SERVICES; }
-}
-
-function saveServicesToStorage(services: ServiceConfig[]) {
-  try { localStorage.setItem("glg_services", JSON.stringify(services)); } catch {}
+function dbServicesToLocal(dbServices: { name: string; start: string; end: string }[]): ServiceConfig[] {
+  return dbServices.map((s, i) => ({
+    id: `svc-${i}`,
+    name: s.name,
+    startTime: s.start,
+    endTime: s.end,
+  }));
 }
 
 export default function ReservationsPage() {
-  const { restaurant } = useAuth();
+  const { restaurant, refreshRestaurant } = useAuth();
   const RESTAURANT_ID = restaurant?.id ?? "";
   const [floorPlans, setFloorPlans] = useState<FloorPlanType[]>([]);
   const [tables, setTables] = useState<RestaurantTable[]>([]);
@@ -184,7 +183,7 @@ export default function ReservationsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Services
-  const [services, setServices] = useState<ServiceConfig[]>(DEFAULT_SERVICES);
+  const [services, setServices] = useState<ServiceConfig[]>(FALLBACK_SERVICES);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [showServicesModal, setShowServicesModal] = useState(false);
   const [editingServices, setEditingServices] = useState<ServiceConfig[]>([]);
@@ -218,10 +217,12 @@ export default function ReservationsPage() {
   // Edit table modal
   const [editingTable, setEditingTable] = useState<RestaurantTable | null>(null);
 
-  // Load services from localStorage
+  // Load services from restaurant's service_hours in DB
   useEffect(() => {
-    setServices(loadServices());
-  }, []);
+    if (restaurant?.service_hours?.services?.length) {
+      setServices(dbServicesToLocal(restaurant.service_hours.services));
+    }
+  }, [restaurant?.service_hours]);
 
   // Refresh current time every minute
   useEffect(() => {
@@ -1353,15 +1354,24 @@ export default function ReservationsPage() {
                 Annuler
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const valid = editingServices.filter((s) => s.name.trim() && s.startTime && s.endTime);
                   setServices(valid);
-                  saveServicesToStorage(valid);
                   // Reset selection if selected service was removed
                   if (selectedServiceId && !valid.find((s) => s.id === selectedServiceId)) {
                     setSelectedServiceId(null);
                   }
                   setShowServicesModal(false);
+                  // Persist to database
+                  try {
+                    await updateServiceHours(
+                      valid.map((s) => ({ name: s.name, start: s.startTime, end: s.endTime })),
+                      restaurant?.service_hours?.slot_interval_minutes ?? 15,
+                    );
+                    await refreshRestaurant();
+                  } catch (e) {
+                    console.error("Erreur sauvegarde horaires:", e);
+                  }
                 }}
                 className="flex-1 py-2 rounded text-sm bg-white text-zinc-900 font-medium hover:bg-zinc-100"
               >

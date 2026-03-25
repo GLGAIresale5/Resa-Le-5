@@ -19,6 +19,7 @@ app.add_middleware(
         "https://resa-le-5.vercel.app",
         "https://le5.glg-ai.com",
         "https://glg-ai.vercel.app",
+        "https://glgai.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],

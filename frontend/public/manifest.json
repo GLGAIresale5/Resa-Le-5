@@ -2,7 +2,7 @@
   "name": "GLG AI — Le 5",
   "short_name": "Le 5",
   "description": "Gestion du restaurant Le 5",
-  "start_url": "/reservations",
+  "start_url": "/le5sucy/reservations",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#18181b",

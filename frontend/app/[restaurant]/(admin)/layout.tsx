@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../lib/auth-context";
-import Sidebar from "../components/Sidebar";
-import BottomNav from "../components/BottomNav";
-import PushNotifications from "../components/PushNotifications";
+import { useRouter, useParams } from "next/navigation";
+import { useAuth } from "../../lib/auth-context";
+import Sidebar from "../../components/Sidebar";
+import BottomNav from "../../components/BottomNav";
+import PushNotifications from "../../components/PushNotifications";
 
 export default function AdminLayout({
   children,
@@ -14,12 +14,14 @@ export default function AdminLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const restaurant = params.restaurant as string;
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace("/login");
+      router.replace(`/${restaurant}/login`);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, restaurant]);
 
   if (loading) {
     return (

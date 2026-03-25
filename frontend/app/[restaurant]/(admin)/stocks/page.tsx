@@ -11,7 +11,7 @@ import {
   ScannedDeliveryItem,
   ZReportScanResult,
   ZReportSaleItem,
-} from "../../types";
+} from "../../../types";
 import {
   fetchStockItems,
   createStockItem,
@@ -29,8 +29,8 @@ import {
   saveZReport,
   recalculateThresholds,
   importLAdditionCsv,
-} from "../../lib/api";
-import { useAuth } from "../../lib/auth-context";
+} from "../../../lib/api";
+import { useAuth } from "../../../lib/auth-context";
 
 type Tab = "stocks" | "commande" | "agent";
 type StockMode = "flux_tendu" | "equilibre" | "stock";

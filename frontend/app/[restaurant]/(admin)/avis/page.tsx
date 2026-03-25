@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Review } from "../../types";
-import { fetchReviews } from "../../lib/api";
-import ReviewCard from "../../components/ReviewCard";
-import { useAuth } from "../../lib/auth-context";
+import { Review } from "../../../types";
+import { fetchReviews } from "../../../lib/api";
+import ReviewCard from "../../../components/ReviewCard";
+import { useAuth } from "../../../lib/auth-context";
 
 type Tab = "pending" | "responded";
 
