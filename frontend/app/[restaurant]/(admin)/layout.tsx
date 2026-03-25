@@ -30,9 +30,9 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace(`/${restaurant}/login`);
+      router.replace("/login");
     }
-  }, [user, loading, router, restaurant]);
+  }, [user, loading, router]);
 
   // Redirect to first allowed module if current route is not authorized
   useEffect(() => {

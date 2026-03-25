@@ -207,7 +207,7 @@ export default function ParametresPage() {
               </div>
             </div>
             <button
-              onClick={async () => { await signOut(); router.push(`/${slug}/login`); }}
+              onClick={async () => { await signOut(); router.push("/login"); }}
               className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
             >
               Déconnexion
