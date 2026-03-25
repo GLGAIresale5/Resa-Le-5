@@ -41,8 +41,8 @@ export default function LeRestaurantPage() {
           </div>
           <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
             <Image
-              src="/images/bartender.jpg"
-              alt="Préparation cocktail"
+              src="/images/terrasse-nuit.jpg"
+              alt="La terrasse du 5 de nuit"
               fill
               className="object-cover"
             />

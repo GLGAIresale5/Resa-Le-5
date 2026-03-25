@@ -4,12 +4,13 @@ from uuid import UUID
 from datetime import date, datetime, timedelta
 
 from core.config import settings
-from core.auth import get_current_user, verify_restaurant_owner
+from core.auth import get_current_user, verify_restaurant_owner, get_restaurant_for_user
 from models.reservation import (
     FloorPlan, FloorPlanCreate,
     RestaurantTable, TableCreate, TableUpdate,
     Reservation, ReservationCreate, ReservationUpdate
 )
+from pydantic import BaseModel
 from supabase import create_client
 
 router = APIRouter()
@@ -679,3 +680,27 @@ async def delete_reservation(reservation_id: UUID, user_id: str = Depends(get_cu
     supabase = get_supabase()
     supabase.table("reservations").delete().eq("id", str(reservation_id)).execute()
     return {"status": "deleted"}
+
+
+# =====================
+# SERVICE HOURS
+# =====================
+
+class ServiceHoursService(BaseModel):
+    name: str
+    start: str  # "HH:MM"
+    end: str    # "HH:MM"
+
+class ServiceHoursUpdate(BaseModel):
+    services: list[ServiceHoursService]
+    slot_interval_minutes: int = 15
+
+@router.patch("/service-hours")
+async def update_service_hours(body: ServiceHoursUpdate, user_id: str = Depends(get_current_user)):
+    """Update service hours for the authenticated user's restaurant."""
+    restaurant = await get_restaurant_for_user(user_id)
+    supabase = get_supabase()
+    supabase.table("restaurants").update({
+        "service_hours": body.model_dump(),
+    }).eq("id", restaurant["id"]).execute()
+    return {"status": "updated", "service_hours": body.model_dump()}

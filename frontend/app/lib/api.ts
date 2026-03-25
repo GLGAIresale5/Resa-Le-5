@@ -555,3 +555,13 @@ export async function stockAgentChat(
   if (!res.ok) throw new Error("Erreur agent stocks");
   return res.json();
 }
+
+export async function updateServiceHours(services: { name: string; start: string; end: string }[], slotInterval: number = 15) {
+  const res = await authFetch(`${API_URL}/reservations/service-hours`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ services, slot_interval_minutes: slotInterval }),
+  });
+  if (!res.ok) throw new Error("Erreur mise à jour des horaires");
+  return res.json();
+}

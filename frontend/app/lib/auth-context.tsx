@@ -4,9 +4,16 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "./supabase";
 import type { User, Session } from "@supabase/supabase-js";
 
+interface ServiceHoursConfig {
+  services: { name: string; start: string; end: string }[];
+  slot_interval_minutes: number;
+}
+
 interface Restaurant {
   id: string;
   name: string;
+  slug?: string;
+  service_hours?: ServiceHoursConfig | null;
 }
 
 interface AuthContextType {
@@ -15,6 +22,7 @@ interface AuthContextType {
   restaurant: Restaurant | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshRestaurant: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -23,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   restaurant: null,
   loading: true,
   signOut: async () => {},
+  refreshRestaurant: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -83,8 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRestaurant(null);
   }
 
+  async function refreshRestaurant() {
+    const { data: { session: s } } = await supabase.auth.getSession();
+    if (s?.access_token) await fetchRestaurant(s.access_token);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, session, restaurant, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, restaurant, loading, signOut, refreshRestaurant }}>
       {children}
     </AuthContext.Provider>
   );

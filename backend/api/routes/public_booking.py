@@ -44,17 +44,44 @@ class PublicBookingResponse(BaseModel):
 
 def _get_restaurant_by_slug_or_id(supabase, slug: Optional[str], restaurant_id: Optional[str]) -> dict:
     """Lookup restaurant by slug or ID. Raises 404 if not found."""
+    fields = "id, name, slug, service_hours"
     if slug:
-        result = supabase.table("restaurants").select("id, name, slug").eq("slug", slug).limit(1).execute()
+        result = supabase.table("restaurants").select(fields).eq("slug", slug).limit(1).execute()
     elif restaurant_id:
-        result = supabase.table("restaurants").select("id, name, slug").eq("id", restaurant_id).limit(1).execute()
+        result = supabase.table("restaurants").select(fields).eq("id", restaurant_id).limit(1).execute()
     else:
         # Fallback: Le 5
-        result = supabase.table("restaurants").select("id, name, slug").eq("id", DEFAULT_RESTAURANT_ID).limit(1).execute()
+        result = supabase.table("restaurants").select(fields).eq("id", DEFAULT_RESTAURANT_ID).limit(1).execute()
 
     if not result.data:
         raise HTTPException(status_code=404, detail="Restaurant introuvable")
     return result.data[0]
+
+
+def _time_to_minutes(t: str) -> int:
+    parts = t.split(":")
+    return int(parts[0]) * 60 + int(parts[1])
+
+
+def _validate_time_within_service_hours(time_str: str, restaurant: dict):
+    """Raise 400 if the requested time falls outside all configured service windows."""
+    service_hours = restaurant.get("service_hours")
+    if not service_hours or not isinstance(service_hours, dict):
+        return  # No service hours configured — allow any time
+    services = service_hours.get("services", [])
+    if not services:
+        return
+    req_min = _time_to_minutes(time_str)
+    for svc in services:
+        start = _time_to_minutes(svc.get("start", "00:00"))
+        end = _time_to_minutes(svc.get("end", "23:59"))
+        if start <= req_min < end:
+            return  # Within this service window
+    svc_names = ", ".join(f"{s['name']} ({s['start']}–{s['end']})" for s in services)
+    raise HTTPException(
+        status_code=400,
+        detail=f"L'horaire {time_str} est en dehors des services disponibles : {svc_names}",
+    )
 
 
 @router.post("/public/book", response_model=PublicBookingResponse)
@@ -81,6 +108,9 @@ async def public_book(
     # Lookup restaurant
     restaurant = _get_restaurant_by_slug_or_id(supabase, slug, restaurant_id)
     rest_id = restaurant["id"]
+
+    # Validate time is within service hours
+    _validate_time_within_service_hours(body.time, restaurant)
 
     full_name = f"{body.guest_first_name.strip()} {body.guest_last_name.strip()}".strip()
 
