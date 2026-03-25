@@ -911,6 +911,7 @@ export default function ReservationsPage() {
               blocks={blocks}
               onCreateBlock={handleCreateBlock}
               onDeleteBlock={handleDeleteBlock}
+              onMonthChange={setCalendarMonth}
             />
           ) : (
           <>
