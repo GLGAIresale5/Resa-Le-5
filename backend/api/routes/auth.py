@@ -2,7 +2,8 @@
 
 import re
 import json
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from core.auth import get_current_user, get_supabase
 
@@ -43,10 +44,13 @@ class RegisterRestaurantRequest(BaseModel):
 
 
 @router.get("/me")
-async def me(user_id: str = Depends(get_current_user)):
-    """Return the current user's restaurant."""
+async def me(user_id: str = Depends(get_current_user), slug: Optional[str] = Query(None)):
+    """Return the current user's restaurant, filtered by slug if provided."""
     sb = get_supabase()
-    result = sb.table("restaurants").select("id, name, slug, service_hours, modules").eq("owner_id", user_id).execute()
+    query = sb.table("restaurants").select("id, name, slug, service_hours, modules").eq("owner_id", user_id)
+    if slug:
+        query = query.eq("slug", slug)
+    result = query.execute()
     if not result.data:
         return {"user_id": user_id, "restaurant": None}
     return {"user_id": user_id, "restaurant": result.data[0]}

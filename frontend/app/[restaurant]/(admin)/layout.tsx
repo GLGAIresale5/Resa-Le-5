@@ -22,11 +22,18 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading, restaurant: restaurantData } = useAuth();
+  const { user, loading, restaurant: restaurantData, refreshRestaurant } = useAuth();
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
   const restaurant = params.restaurant as string;
+
+  // Re-fetch restaurant when slug changes (multi-tenant navigation)
+  useEffect(() => {
+    if (!loading && user && restaurantData?.slug && restaurantData.slug !== restaurant) {
+      refreshRestaurant();
+    }
+  }, [restaurant, loading, user, restaurantData?.slug, refreshRestaurant]);
 
   useEffect(() => {
     if (!loading && !user) {
