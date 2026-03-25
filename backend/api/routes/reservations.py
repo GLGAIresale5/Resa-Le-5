@@ -8,7 +8,8 @@ from core.auth import get_current_user, verify_restaurant_owner, get_restaurant_
 from models.reservation import (
     FloorPlan, FloorPlanCreate,
     RestaurantTable, TableCreate, TableUpdate,
-    Reservation, ReservationCreate, ReservationUpdate
+    Reservation, ReservationCreate, ReservationUpdate,
+    ReservationBlock, ReservationBlockCreate,
 )
 from pydantic import BaseModel
 from supabase import create_client
@@ -704,3 +705,54 @@ async def update_service_hours(body: ServiceHoursUpdate, user_id: str = Depends(
         "service_hours": body.model_dump(),
     }).eq("id", restaurant["id"]).execute()
     return {"status": "updated", "service_hours": body.model_dump()}
+
+
+# =====================
+# RESERVATION BLOCKS
+# =====================
+
+@router.get("/blocks", response_model=List[ReservationBlock])
+async def list_blocks(
+    restaurant_id: UUID = Query(...),
+    month: Optional[str] = Query(None, description="YYYY-MM format"),
+    user_id: str = Depends(get_current_user),
+):
+    await verify_restaurant_owner(user_id, str(restaurant_id))
+    supabase = get_supabase()
+    q = supabase.table("reservation_blocks").select("*").eq("restaurant_id", str(restaurant_id))
+    if month:
+        # Filter by month: date >= first day, date < first day of next month
+        year, m = int(month[:4]), int(month[5:7])
+        start = date(year, m, 1)
+        if m == 12:
+            end = date(year + 1, 1, 1)
+        else:
+            end = date(year, m + 1, 1)
+        q = q.gte("date", start.isoformat()).lt("date", end.isoformat())
+    result = q.order("date").execute()
+    return result.data
+
+
+@router.post("/blocks", response_model=ReservationBlock)
+async def create_block(body: ReservationBlockCreate, user_id: str = Depends(get_current_user)):
+    await verify_restaurant_owner(user_id, str(body.restaurant_id))
+    supabase = get_supabase()
+    data = body.model_dump()
+    data["restaurant_id"] = str(data["restaurant_id"])
+    data["date"] = data["date"].isoformat()
+    result = supabase.table("reservation_blocks").insert(data).execute()
+    if not result.data:
+        raise HTTPException(status_code=400, detail="Blocage déjà existant pour cette date/service")
+    return result.data[0]
+
+
+@router.delete("/blocks/{block_id}")
+async def delete_block(block_id: UUID, user_id: str = Depends(get_current_user)):
+    supabase = get_supabase()
+    # Verify ownership
+    block = supabase.table("reservation_blocks").select("*").eq("id", str(block_id)).single().execute()
+    if not block.data:
+        raise HTTPException(status_code=404, detail="Blocage non trouvé")
+    await verify_restaurant_owner(user_id, block.data["restaurant_id"])
+    supabase.table("reservation_blocks").delete().eq("id", str(block_id)).execute()
+    return {"status": "deleted"}

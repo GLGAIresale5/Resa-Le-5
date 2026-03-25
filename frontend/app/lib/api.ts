@@ -565,3 +565,28 @@ export async function updateServiceHours(services: { name: string; start: string
   if (!res.ok) throw new Error("Erreur mise à jour des horaires");
   return res.json();
 }
+
+// ── Reservation Blocks ─────────────────────────────────────────────────────
+
+export async function fetchBlocks(restaurantId: string, month?: string): Promise<import("../types").ReservationBlock[]> {
+  const params = new URLSearchParams({ restaurant_id: restaurantId });
+  if (month) params.set("month", month);
+  const res = await authFetch(`${API_URL}/reservations/blocks?${params}`);
+  if (!res.ok) throw new Error("Erreur chargement blocages");
+  return res.json();
+}
+
+export async function createBlock(restaurantId: string, date: string, service?: string | null, reason?: string | null): Promise<import("../types").ReservationBlock> {
+  const res = await authFetch(`${API_URL}/reservations/blocks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ restaurant_id: restaurantId, date, service: service ?? null, reason: reason ?? null }),
+  });
+  if (!res.ok) throw new Error("Erreur création blocage");
+  return res.json();
+}
+
+export async function deleteBlock(blockId: string): Promise<void> {
+  const res = await authFetch(`${API_URL}/reservations/blocks/${blockId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Erreur suppression blocage");
+}

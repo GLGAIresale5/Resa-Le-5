@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import FloorPlan from "../../../components/FloorPlan";
+import CalendarView from "../../../components/CalendarView";
 import ReservationForm from "../../../components/ReservationForm";
 import {
   fetchFloorPlans,
@@ -20,8 +21,11 @@ import {
   createTable,
   deleteTable,
   updateServiceHours,
+  fetchBlocks,
+  createBlock,
+  deleteBlock,
 } from "../../../lib/api";
-import { FloorPlan as FloorPlanType, RestaurantTable, Reservation, ReservationCreate } from "../../../types";
+import { FloorPlan as FloorPlanType, RestaurantTable, Reservation, ReservationCreate, ReservationBlock } from "../../../types";
 import { useAuth } from "../../../lib/auth-context";
 
 const MERGE_THRESHOLD = 9; // % distance center-to-center to consider tables adjacent
@@ -182,6 +186,16 @@ export default function ReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // All pending reservations (across all dates)
+  const [pendingAll, setPendingAll] = useState<Reservation[]>([]);
+  const [pendingCollapsed, setPendingCollapsed] = useState(false);
+
+  // Calendar view
+  const [viewMode, setViewMode] = useState<"floor" | "calendar">("floor");
+  const [blocks, setBlocks] = useState<ReservationBlock[]>([]);
+  const [calendarMonth, setCalendarMonth] = useState(() => todayStr().slice(0, 7)); // "YYYY-MM"
+  const [monthReservations, setMonthReservations] = useState<Reservation[]>([]);
+
   // Services
   const [services, setServices] = useState<ServiceConfig[]>(FALLBACK_SERVICES);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
@@ -255,12 +269,14 @@ export default function ReservationsPage() {
       setLoading(true);
       setError(null);
       try {
-        const [plans, res] = await Promise.all([
+        const [plans, res, pending] = await Promise.all([
           fetchFloorPlans(RESTAURANT_ID),
           fetchReservations(RESTAURANT_ID, selectedDate),
+          fetchReservations(RESTAURANT_ID, undefined, "pending"),
         ]);
         setFloorPlans(plans);
         setReservations(res);
+        setPendingAll(pending);
         if (plans.length > 0) {
           setSelectedPlanId(plans[0].id);
           const t = await fetchTables(RESTAURANT_ID, plans[0].id);
@@ -279,6 +295,24 @@ export default function ReservationsPage() {
   useEffect(() => {
     loadReservations(selectedDate);
   }, [selectedDate]);
+
+  // Load blocks and month reservations when calendar view is active
+  useEffect(() => {
+    if (viewMode !== "calendar" || !RESTAURANT_ID) return;
+    const loadCalendarData = async () => {
+      try {
+        const [b, monthRes] = await Promise.all([
+          fetchBlocks(RESTAURANT_ID, calendarMonth),
+          fetchReservations(RESTAURANT_ID), // all reservations (no date filter)
+        ]);
+        setBlocks(b);
+        setMonthReservations(monthRes);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadCalendarData();
+  }, [viewMode, calendarMonth, RESTAURANT_ID]);
 
   // Reload tables on plan change
   useEffect(() => {
@@ -480,6 +514,7 @@ export default function ReservationsPage() {
   const handleConfirmReservation = async (resId: string) => {
     const res = await confirmReservation(resId);
     setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
+    setPendingAll((prev) => prev.filter((r) => r.id !== resId));
   };
 
   const handleNoShowReservation = async (resId: string) => {
@@ -579,6 +614,62 @@ export default function ReservationsPage() {
   const activeReservations = serviceReservations.filter((r) => r.status !== "cancelled");
   const totalCovers = activeReservations.reduce((sum, r) => sum + r.guest_count, 0);
 
+  // Calendar day summaries with per-service breakdown
+  const daySummaries = useMemo(() => {
+    const map = new Map<string, { count: number; covers: number; byService: Map<string, { count: number; covers: number }> }>();
+    monthReservations
+      .filter((r) => r.status !== "cancelled")
+      .forEach((r) => {
+        const existing = map.get(r.date) ?? { count: 0, covers: 0, byService: new Map() };
+        existing.count += 1;
+        existing.covers += r.guest_count;
+        // Find which service this reservation belongs to
+        const resMin = timeToMinutes(r.time);
+        let serviceName = "Autre";
+        for (const svc of services) {
+          const start = timeToMinutes(svc.startTime);
+          const end = timeToMinutes(svc.endTime);
+          if (resMin >= start && resMin < end) {
+            serviceName = svc.name;
+            break;
+          }
+        }
+        const svcData = existing.byService.get(serviceName) ?? { count: 0, covers: 0 };
+        svcData.count += 1;
+        svcData.covers += r.guest_count;
+        existing.byService.set(serviceName, svcData);
+        map.set(r.date, existing);
+      });
+    return Array.from(map.entries()).map(([date, { count, covers, byService }]) => ({
+      date,
+      reservationCount: count,
+      coverCount: covers,
+      services: Array.from(byService.entries()).map(([name, data]) => ({
+        name,
+        reservationCount: data.count,
+        coverCount: data.covers,
+      })),
+    }));
+  }, [monthReservations, services]);
+
+  const handleCreateBlock = async (date: string, service: string | null, reason: string | null) => {
+    try {
+      const block = await createBlock(RESTAURANT_ID, date, service, reason);
+      setBlocks((prev) => [...prev, block]);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteBlock = async (blockId: string) => {
+    try {
+      await deleteBlock(blockId);
+      setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-zinc-900 text-white overflow-hidden">
       {/* Header */}
@@ -644,17 +735,38 @@ export default function ReservationsPage() {
             <span><span className="text-white font-medium">{activeReservations.length}</span> résa</span>
             <span><span className="text-white font-medium">{totalCovers}</span> couv.</span>
           </div>
-          <div className="ml-auto shrink-0 hidden md:block">
-            <button
-              onClick={() => setEditMode((prev) => !prev)}
-              className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                editMode
-                  ? "bg-blue-600 border-blue-500 text-white"
-                  : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600"
-              }`}
-            >
-              {editMode ? "Quitter" : "Éditer"}
-            </button>
+          <div className="ml-auto shrink-0 hidden md:flex items-center gap-2">
+            {/* View toggle: Plan / Calendrier */}
+            <div className="flex items-center gap-0.5 bg-zinc-800 border border-zinc-700 rounded p-0.5">
+              <button
+                onClick={() => setViewMode("floor")}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  viewMode === "floor" ? "bg-zinc-600 text-white" : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Plan
+              </button>
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  viewMode === "calendar" ? "bg-zinc-600 text-white" : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Calendrier
+              </button>
+            </div>
+            {viewMode === "floor" && (
+              <button
+                onClick={() => setEditMode((prev) => !prev)}
+                className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                  editMode
+                    ? "bg-blue-600 border-blue-500 text-white"
+                    : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                }`}
+              >
+                {editMode ? "Quitter" : "Éditer"}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -662,6 +774,56 @@ export default function ReservationsPage() {
       <div className="flex flex-1 overflow-hidden relative">
         {/* MOBILE: Full-screen reservation list (no floor plan) */}
         <div className="flex md:hidden flex-col flex-1 overflow-y-auto">
+          {/* Mobile: À valider section */}
+          {pendingAll.length > 0 && (
+            <div className="border-b border-amber-500/30 bg-amber-950/20">
+              <button
+                onClick={() => setPendingCollapsed((v) => !v)}
+                className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-amber-400 hover:bg-amber-950/30 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-black">
+                    {pendingAll.length}
+                  </span>
+                  À valider
+                </span>
+                <svg className={`h-3.5 w-3.5 transition-transform ${pendingCollapsed ? "" : "rotate-180"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {!pendingCollapsed && (
+                <div className="divide-y divide-amber-500/10">
+                  {pendingAll
+                    .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+                    .map((res) => (
+                      <div key={res.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => { setSelectedDate(res.date); setEditingReservation(res); setShowForm(false); setShowPanel(true); }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-white truncate">{res.guest_name}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-zinc-400">
+                            <span className="text-amber-400/80">{new Date(res.date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>
+                            <span>·</span>
+                            <span>{res.time?.slice(0, 5)}</span>
+                            <span>·</span>
+                            <span>{res.guest_count} pers.</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleConfirmReservation(res.id)}
+                          className="shrink-0 px-2.5 py-1 rounded text-[10px] font-medium bg-amber-500 text-black hover:bg-amber-400 transition-colors"
+                        >
+                          Valider
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
           {loading ? (
             <div className="flex items-center justify-center py-20 text-zinc-500 text-sm">Chargement...</div>
           ) : serviceReservations.length === 0 ? (
@@ -739,8 +901,19 @@ export default function ReservationsPage() {
           )}
         </div>
 
-        {/* TABLET/DESKTOP: Floor plan */}
+        {/* TABLET/DESKTOP: Floor plan or Calendar */}
         <div className="hidden md:flex flex-col flex-1 min-w-0 p-2 md:p-4 gap-3">
+          {viewMode === "calendar" ? (
+            <CalendarView
+              selectedDate={selectedDate}
+              onSelectDate={(date) => { setSelectedDate(date); setViewMode("floor"); }}
+              daySummaries={daySummaries}
+              blocks={blocks}
+              onCreateBlock={handleCreateBlock}
+              onDeleteBlock={handleDeleteBlock}
+            />
+          ) : (
+          <>
           {/* Plan selector tabs */}
           <div className="flex items-end gap-0 border-b border-zinc-800 pb-0">
             {floorPlans.map((plan) => {
@@ -886,6 +1059,8 @@ export default function ReservationsPage() {
               />
             )}
           </div>
+          </>
+          )}
         </div>
 
         {/* Floating button to toggle panel on tablet (hidden on mobile — list is already visible) */}
@@ -931,6 +1106,57 @@ export default function ReservationsPage() {
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
+              {/* Section À valider — all pending across all dates */}
+              {pendingAll.length > 0 && (
+                <div className="border-b border-amber-500/30 bg-amber-950/20">
+                  <button
+                    onClick={() => setPendingCollapsed((v) => !v)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-amber-400 hover:bg-amber-950/30 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-black">
+                        {pendingAll.length}
+                      </span>
+                      À valider
+                    </span>
+                    <svg className={`h-3.5 w-3.5 transition-transform ${pendingCollapsed ? "" : "rotate-180"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {!pendingCollapsed && (
+                    <div className="divide-y divide-amber-500/10">
+                      {pendingAll
+                        .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+                        .map((res) => (
+                          <div key={res.id} className="px-4 py-2.5 flex items-center justify-between gap-2 hover:bg-amber-950/30 transition-colors">
+                            <div
+                              className="flex-1 min-w-0 cursor-pointer"
+                              onClick={() => { setSelectedDate(res.date); setEditingReservation(res); setShowForm(false); setShowPanel(true); }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-white truncate">{res.guest_name}</span>
+                                <span className="text-[10px]">{SOURCE_ICON[res.source] ?? ""}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-zinc-400">
+                                <span className="text-amber-400/80">{new Date(res.date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>
+                                <span>·</span>
+                                <span>{res.time?.slice(0, 5)}</span>
+                                <span>·</span>
+                                <span>{res.guest_count} pers.</span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleConfirmReservation(res.id)}
+                              className="shrink-0 px-2.5 py-1 rounded text-[10px] font-medium bg-amber-500 text-black hover:bg-amber-400 transition-colors"
+                            >
+                              Valider
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {serviceReservations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-sm gap-2 p-6">
                   <span className="text-2xl">📋</span>

@@ -240,3 +240,12 @@ export interface ReservationCreate {
   notes?: string;
   grouped_table_ids?: string[];
 }
+
+export interface ReservationBlock {
+  id: string;
+  restaurant_id: string;
+  date: string;
+  service: string | null;
+  reason: string | null;
+  created_at?: string;
+}

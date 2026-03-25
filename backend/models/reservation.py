@@ -131,3 +131,23 @@ class ReservationUpdate(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
     grouped_table_ids: Optional[List[UUID]] = None
+
+
+# =====================
+# RESERVATION BLOCK
+# =====================
+
+class ReservationBlock(BaseModel):
+    id: UUID
+    restaurant_id: UUID
+    date: date
+    service: Optional[str] = None  # null = jour entier, "midi"/"soir" = service
+    reason: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class ReservationBlockCreate(BaseModel):
+    restaurant_id: UUID
+    date: date
+    service: Optional[str] = None
+    reason: Optional[str] = None

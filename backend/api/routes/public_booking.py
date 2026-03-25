@@ -112,6 +112,31 @@ async def public_book(
     # Validate time is within service hours
     _validate_time_within_service_hours(body.time, restaurant)
 
+    # Check for reservation blocks
+    blocks = supabase.table("reservation_blocks").select("*").eq(
+        "restaurant_id", rest_id
+    ).eq("date", body.date.isoformat()).execute()
+    if blocks.data:
+        for block in blocks.data:
+            if block["service"] is None:
+                # Whole day blocked
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Le restaurant est fermé le {body.date.strftime('%d/%m/%Y')}. Veuillez choisir une autre date.",
+                )
+            # Check if the requested time falls within the blocked service
+            req_min = _time_to_minutes(body.time)
+            service_hours = restaurant.get("service_hours", {})
+            for svc in service_hours.get("services", []):
+                if svc["name"].lower() == block["service"].lower():
+                    start = _time_to_minutes(svc.get("start", "00:00"))
+                    end = _time_to_minutes(svc.get("end", "23:59"))
+                    if start <= req_min < end:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Le service {svc['name']} n'est pas disponible le {body.date.strftime('%d/%m/%Y')}. Veuillez choisir un autre créneau.",
+                        )
+
     full_name = f"{body.guest_first_name.strip()} {body.guest_last_name.strip()}".strip()
 
     # Try to auto-assign a table (non-blocking — still accept if no table available)
