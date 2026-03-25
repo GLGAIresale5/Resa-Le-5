@@ -51,7 +51,7 @@ export default function AvisPage() {
         <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-5 gap-3">
           <div>
             <h1 className="text-base font-semibold text-zinc-900">Avis clients</h1>
-            <p className="text-xs text-zinc-400">Gérez et répondez aux avis Google, TripAdvisor, TheFork</p>
+            <p className="text-xs text-zinc-400">Gérez et répondez aux avis Google</p>
           </div>
           <div className="flex items-center gap-3">
             <button
