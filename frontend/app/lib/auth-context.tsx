@@ -74,11 +74,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function fetchRestaurant(accessToken: string) {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      // Extract slug from URL path (e.g. /le5sucy/avis -> le5sucy)
+      // Extract slug from URL path (e.g. /le-5/avis -> le-5)
       const pathSlug = typeof window !== "undefined"
         ? window.location.pathname.split("/").filter(Boolean)[0]
         : undefined;
-      const url = pathSlug
+      // Don't filter by slug if it's a known non-restaurant path
+      const nonRestaurantPaths = ["login", "register", "reserver"];
+      const isRestaurantSlug = pathSlug && !nonRestaurantPaths.includes(pathSlug);
+      const url = isRestaurantSlug
         ? `${API_URL}/auth/me?slug=${encodeURIComponent(pathSlug)}`
         : `${API_URL}/auth/me`;
       const res = await fetch(url, {

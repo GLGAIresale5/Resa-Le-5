@@ -28,12 +28,12 @@ export default function AdminLayout({
   const pathname = usePathname();
   const restaurant = params.restaurant as string;
 
-  // Re-fetch restaurant when slug changes (multi-tenant navigation)
+  // Re-fetch restaurant when slug changes or restaurant is missing after login redirect
   useEffect(() => {
-    if (!loading && user && restaurantData?.slug && restaurantData.slug !== restaurant) {
+    if (!loading && user && (!restaurantData || restaurantData.slug !== restaurant)) {
       refreshRestaurant();
     }
-  }, [restaurant, loading, user, restaurantData?.slug, refreshRestaurant]);
+  }, [restaurant, loading, user, restaurantData, refreshRestaurant]);
 
   useEffect(() => {
     if (!loading && !user) {
