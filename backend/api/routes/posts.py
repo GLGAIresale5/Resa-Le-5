@@ -4,6 +4,7 @@ from core.config import settings
 from core.auth import get_current_user, verify_restaurant_owner
 from agents.social_agent import generate_post
 from models.post import GeneratePostRequest, ApprovePostRequest
+from services.meta_feed import fetch_recent_captions
 from datetime import datetime, timedelta, timezone
 from typing import List
 
@@ -44,6 +45,9 @@ async def generate(body: GeneratePostRequest, user_id: str = Depends(get_current
 
     r = restaurant.data[0]
 
+    # Récupérer les anciens posts Instagram pour le contexte éditorial
+    previous_captions = await fetch_recent_captions(r)
+
     # Générer les captions avec Claude
     captions = generate_post(
         context=body.context,
@@ -52,6 +56,7 @@ async def generate(body: GeneratePostRequest, user_id: str = Depends(get_current
         platforms=body.platforms,
         photo_base64=body.photo_base64,
         photo_media_type=body.photo_media_type or "image/jpeg",
+        previous_captions=previous_captions,
     )
 
     # Construire le texte généré (Instagram en priorité, Facebook en complément)

@@ -14,6 +14,15 @@ from typing import Optional
 router = APIRouter(prefix="/oauth", tags=["oauth"])
 
 
+def _get_restaurant_slug(restaurant_id: str) -> str:
+    """Get restaurant slug from ID for redirect URLs."""
+    sb = get_supabase()
+    result = sb.table("restaurants").select("slug").eq("id", restaurant_id).execute()
+    if result.data and result.data[0].get("slug"):
+        return result.data[0]["slug"]
+    return "login"  # fallback
+
+
 async def _get_user_from_token_param(token: Optional[str] = Query(None), authorization: Optional[str] = Header(None)) -> str:
     """Extract user_id from JWT passed as query param or Authorization header.
 
@@ -28,7 +37,7 @@ async def _get_user_from_token_param(token: Optional[str] = Query(None), authori
     return await get_current_user(authorization=authorization)
 
 # ─── Frontend URLs ─────────────────────────────────────────────────────────────
-FRONTEND_URL = "https://resa-le-5.vercel.app"
+FRONTEND_URL = "https://glgai.vercel.app"
 LOCAL_FRONTEND = "http://localhost:3000"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -74,6 +83,7 @@ async def google_connect(user_id: str = Depends(_get_user_from_token_param)):
 async def google_callback(code: str = Query(...), state: str = Query(...)):
     """Handle Google OAuth callback — exchange code for tokens and store them."""
     restaurant_id = state
+    slug = _get_restaurant_slug(restaurant_id)
 
     # Determine callback URL (must match what was used in /connect)
     if settings.environment == "production":
@@ -82,6 +92,8 @@ async def google_callback(code: str = Query(...), state: str = Query(...)):
     else:
         redirect_uri = "http://localhost:8000/oauth/google/callback"
         frontend_redirect = LOCAL_FRONTEND
+
+    base_redirect = f"{frontend_redirect}/{slug}/parametres"
 
     # Exchange code for tokens
     async with httpx.AsyncClient() as client:
@@ -97,14 +109,14 @@ async def google_callback(code: str = Query(...), state: str = Query(...)):
         )
 
     if token_resp.status_code != 200:
-        return RedirectResponse(url=f"{frontend_redirect}/parametres?google=error&detail=token_exchange_failed")
+        return RedirectResponse(url=f"{base_redirect}?google=error&detail=token_exchange_failed")
 
     tokens = token_resp.json()
     refresh_token = tokens.get("refresh_token")
     access_token = tokens.get("access_token")
 
     if not refresh_token:
-        return RedirectResponse(url=f"{frontend_redirect}/parametres?google=error&detail=no_refresh_token")
+        return RedirectResponse(url=f"{base_redirect}?google=error&detail=no_refresh_token")
 
     # Try to auto-detect the Google Business location
     google_location_name = ""
@@ -143,7 +155,7 @@ async def google_callback(code: str = Query(...), state: str = Query(...)):
 
     sb.table("restaurants").update(update_data).eq("id", restaurant_id).execute()
 
-    return RedirectResponse(url=f"{frontend_redirect}/parametres?google=success")
+    return RedirectResponse(url=f"{base_redirect}?google=success")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -184,6 +196,7 @@ async def meta_connect(user_id: str = Depends(_get_user_from_token_param)):
 async def meta_callback(code: str = Query(...), state: str = Query(...)):
     """Handle Meta OAuth callback — exchange code, get long-lived token, find pages/IG."""
     restaurant_id = state
+    slug = _get_restaurant_slug(restaurant_id)
 
     if settings.environment == "production":
         redirect_uri = "https://glg-ai-api.onrender.com/oauth/meta/callback"
@@ -191,6 +204,8 @@ async def meta_callback(code: str = Query(...), state: str = Query(...)):
     else:
         redirect_uri = "http://localhost:8000/oauth/meta/callback"
         frontend_redirect = LOCAL_FRONTEND
+
+    base_redirect = f"{frontend_redirect}/{slug}/parametres"
 
     # Step 1: Exchange code for short-lived user token
     async with httpx.AsyncClient() as client:
@@ -206,7 +221,7 @@ async def meta_callback(code: str = Query(...), state: str = Query(...)):
         )
 
     if token_resp.status_code != 200:
-        return RedirectResponse(url=f"{frontend_redirect}/parametres?meta=error&detail=token_exchange_failed")
+        return RedirectResponse(url=f"{base_redirect}?meta=error&detail=token_exchange_failed")
 
     short_lived_token = token_resp.json().get("access_token")
 
@@ -224,7 +239,7 @@ async def meta_callback(code: str = Query(...), state: str = Query(...)):
         )
 
     if ll_resp.status_code != 200:
-        return RedirectResponse(url=f"{frontend_redirect}/parametres?meta=error&detail=long_lived_token_failed")
+        return RedirectResponse(url=f"{base_redirect}?meta=error&detail=long_lived_token_failed")
 
     long_lived_user_token = ll_resp.json().get("access_token")
 
@@ -263,7 +278,7 @@ async def meta_callback(code: str = Query(...), state: str = Query(...)):
                 meta_instagram_id = ig_data.get("id", "")
 
     if not meta_page_access_token:
-        return RedirectResponse(url=f"{frontend_redirect}/parametres?meta=error&detail=no_page_found")
+        return RedirectResponse(url=f"{base_redirect}?meta=error&detail=no_page_found")
 
     # Step 5: Store tokens in database
     sb = get_supabase()
@@ -274,7 +289,7 @@ async def meta_callback(code: str = Query(...), state: str = Query(...)):
         "meta_instagram_account_id": meta_instagram_id,
     }).eq("id", restaurant_id).execute()
 
-    return RedirectResponse(url=f"{frontend_redirect}/parametres?meta=success")
+    return RedirectResponse(url=f"{base_redirect}?meta=success")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

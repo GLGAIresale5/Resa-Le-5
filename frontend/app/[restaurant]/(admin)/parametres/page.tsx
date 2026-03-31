@@ -24,7 +24,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function ParametresPage() {
-  const { restaurant, user, session, signOut } = useAuth();
+  const { restaurant, user, session, signOut, refreshRestaurant } = useAuth();
   const RESTAURANT_ID = restaurant?.id ?? "";
   const router = useRouter();
   const params = useParams();
@@ -34,6 +34,40 @@ export default function ParametresPage() {
   const [subscribing, setSubscribing] = useState(false);
   const [oauthStatus, setOauthStatus] = useState<OAuthStatus | null>(null);
   const [oauthFlash, setOauthFlash] = useState<string | null>(null);
+  const [toneProfile, setToneProfile] = useState("");
+  const [toneLoaded, setToneLoaded] = useState(false);
+  const [toneSaving, setToneSaving] = useState(false);
+  const [toneSaved, setToneSaved] = useState(false);
+
+  // Load tone_profile from restaurant data
+  useEffect(() => {
+    if (restaurant?.tone_profile && !toneLoaded) {
+      setToneProfile(restaurant.tone_profile);
+      setToneLoaded(true);
+    }
+  }, [restaurant?.tone_profile, toneLoaded]);
+
+  async function handleSaveToneProfile() {
+    if (!session?.access_token || !RESTAURANT_ID) return;
+    setToneSaving(true);
+    setToneSaved(false);
+    try {
+      const res = await fetch(`${API_URL}/auth/tone-profile?restaurant_id=${RESTAURANT_ID}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ tone_profile: toneProfile }),
+      });
+      if (res.ok) {
+        setToneSaved(true);
+        refreshRestaurant();
+        setTimeout(() => setToneSaved(false), 3000);
+      }
+    } catch {}
+    setToneSaving(false);
+  }
 
   // Check for OAuth callback flash messages
   useEffect(() => {
@@ -305,6 +339,35 @@ export default function ParametresPage() {
             }`}>
               {oauthStatus?.sms.enabled ? "Actif" : "Inactif"}
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Profil éditorial */}
+      <div className="mt-8">
+        <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Profil éditorial</h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Définissez le ton, les hashtags et le style de vos posts réseaux sociaux. L'IA s'en servira comme guide.
+        </p>
+        <div className="mt-3 rounded-xl border border-zinc-200 bg-white p-4">
+          <textarea
+            value={toneProfile}
+            onChange={(e) => { setToneProfile(e.target.value); setToneSaved(false); }}
+            rows={10}
+            placeholder={"Ex :\nTon : pragmatique et décontracté. Phrases courtes, directes.\nInterdit : \"Laissez-vous tenter...\", \"Nous sommes ravis...\"\nHashtags fixes : #monrestaurant #maville\nExemple bon ton : \"Nos croquetas sont maison, croustillantes dehors, fondantes dedans.\""}
+            className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-relaxed text-zinc-800 placeholder:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+          />
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              onClick={handleSaveToneProfile}
+              disabled={toneSaving}
+              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50"
+            >
+              {toneSaving ? "Enregistrement…" : "Enregistrer"}
+            </button>
+            {toneSaved && (
+              <span className="text-xs font-medium text-emerald-600">Enregistré</span>
+            )}
           </div>
         </div>
       </div>

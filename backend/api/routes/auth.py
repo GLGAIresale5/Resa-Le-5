@@ -43,11 +43,15 @@ class RegisterRestaurantRequest(BaseModel):
     name: str
 
 
+class UpdateToneProfileRequest(BaseModel):
+    tone_profile: str
+
+
 @router.get("/me")
 async def me(user_id: str = Depends(get_current_user), slug: Optional[str] = Query(None)):
     """Return the current user's restaurant, filtered by slug if provided."""
     sb = get_supabase()
-    query = sb.table("restaurants").select("id, name, slug, service_hours, modules").eq("owner_id", user_id)
+    query = sb.table("restaurants").select("id, name, slug, service_hours, modules, tone_profile").eq("owner_id", user_id)
     if slug:
         query = query.eq("slug", slug)
     result = query.execute()
@@ -104,3 +108,20 @@ async def register_restaurant(
         raise HTTPException(status_code=500, detail="Erreur lors de la création")
 
     return {"restaurant": result.data[0]}
+
+
+@router.patch("/tone-profile")
+async def update_tone_profile(
+    body: UpdateToneProfileRequest,
+    restaurant_id: str = Query(...),
+    user_id: str = Depends(get_current_user),
+):
+    """Update the editorial tone profile for a restaurant."""
+    sb = get_supabase()
+    # Verify ownership
+    check = sb.table("restaurants").select("id").eq("id", restaurant_id).eq("owner_id", user_id).execute()
+    if not check.data:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+
+    sb.table("restaurants").update({"tone_profile": body.tone_profile}).eq("id", restaurant_id).execute()
+    return {"status": "ok"}
