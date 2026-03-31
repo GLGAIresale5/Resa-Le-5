@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GLG AI — Le 5",
-  description: "Gestion du restaurant Le 5",
+  title: "GLG AI",
+  description: "Gestion de restaurant",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Le 5",
+    title: "GLG AI",
   },
   other: {
     "mobile-web-app-capable": "yes",

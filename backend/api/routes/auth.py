@@ -56,6 +56,14 @@ async def me(user_id: str = Depends(get_current_user), slug: Optional[str] = Que
     return {"user_id": user_id, "restaurant": result.data[0]}
 
 
+@router.get("/my-restaurants")
+async def my_restaurants(user_id: str = Depends(get_current_user)):
+    """Return all restaurants owned by the current user."""
+    sb = get_supabase()
+    result = sb.table("restaurants").select("id, name, slug, modules").eq("owner_id", user_id).execute()
+    return {"user_id": user_id, "restaurants": result.data or []}
+
+
 @router.post("/register-restaurant")
 async def register_restaurant(
     body: RegisterRestaurantRequest,
