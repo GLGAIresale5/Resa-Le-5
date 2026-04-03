@@ -1,11 +1,24 @@
-// Service Worker for GLG AI — Push Notifications
+// Service Worker for GLG AI — Push Notifications + Auto-update
+// Change this version string on each deploy to trigger an update
+const SW_VERSION = "2026-04-03-arrived";
 
 self.addEventListener("install", (event) => {
+  // Activate immediately — don't wait for old SW to stop
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    // Take control of all clients immediately
+    self.clients.claim().then(() => {
+      // Notify all open windows that a new version is available
+      self.clients.matchAll({ type: "window" }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: "SW_UPDATED", version: SW_VERSION });
+        });
+      });
+    })
+  );
 });
 
 // Handle push notifications
@@ -60,4 +73,11 @@ self.addEventListener("notificationclick", (event) => {
       return self.clients.openWindow(url);
     })
   );
+});
+
+// Respond to version check messages from the app
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "GET_VERSION") {
+    event.source.postMessage({ type: "SW_VERSION", version: SW_VERSION });
+  }
 });

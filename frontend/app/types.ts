@@ -64,7 +64,7 @@ export interface GeneratePostResult {
 // --- Réservations ---
 
 export type TableShape = "square" | "round" | "rectangle";
-export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "no_show";
+export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "no_show" | "arrived";
 export type ReservationSource = "manual" | "phone" | "google" | "instagram" | "facebook" | "web";
 
 export interface FloorPlan {

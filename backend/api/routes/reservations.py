@@ -646,6 +646,21 @@ async def no_show_reservation(reservation_id: UUID, user_id: str = Depends(get_c
     return response.data[0]
 
 
+@router.post("/{reservation_id}/arrived", response_model=Reservation)
+async def arrived_reservation(reservation_id: UUID, user_id: str = Depends(get_current_user)):
+    """Mark a reservation as arrived."""
+    supabase = get_supabase()
+    response = (
+        supabase.table("reservations")
+        .update({"status": "arrived"})
+        .eq("id", str(reservation_id))
+        .execute()
+    )
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Réservation introuvable")
+    return response.data[0]
+
+
 @router.get("/check-phone")
 async def check_phone_no_shows(restaurant_id: UUID, phone: str, user_id: str = Depends(get_current_user)):
     """Check consecutive no-shows for a phone number.

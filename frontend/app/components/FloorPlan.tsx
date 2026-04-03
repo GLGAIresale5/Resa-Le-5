@@ -26,7 +26,9 @@ interface FloorPlanProps {
 function getTableStatus(
   table: RestaurantTable,
   reservations: Reservation[]
-): "free" | "reserved" | "occupied" {
+): "free" | "reserved" | "occupied" | "pending" | "arrived" {
+  const arrived = reservations.filter((r) => r.table_id === table.id && r.status === "arrived");
+  if (arrived.length > 0) return "arrived";
   const confirmed = reservations.filter((r) => r.table_id === table.id && r.status === "confirmed");
   if (confirmed.length > 0) return "reserved";
   const pending = reservations.filter((r) => r.table_id === table.id && r.status === "pending");
@@ -48,7 +50,7 @@ function TableShape({
   shape: string;
   width: number;
   height: number;
-  status: "free" | "reserved" | "occupied" | "pending";
+  status: "free" | "reserved" | "occupied" | "pending" | "arrived";
   selected: boolean;
   editMode: boolean;
   inMergeGroup?: boolean;
@@ -65,6 +67,8 @@ function TableShape({
     ? "border-blue-400"
     : editMode
     ? "border-zinc-500"
+    : status === "arrived"
+    ? "border-blue-400"
     : status === "reserved"
     ? "border-emerald-400"
     : status === "pending"
@@ -83,6 +87,8 @@ function TableShape({
     ? "bg-blue-900/60"
     : editMode
     ? "bg-zinc-700/60"
+    : status === "arrived"
+    ? "bg-blue-900/50"
     : status === "reserved"
     ? "bg-emerald-900/50"
     : status === "pending"
@@ -257,7 +263,7 @@ export default function FloorPlan({
         const rotation = table.rotation ?? 0;
         const tableW = (table.shape === "rectangle" ? table.width * 1.5 : table.width) * scaleFactor;
         const tableH = table.height * scaleFactor;
-        const res = reservations.find((r) => r.table_id === table.id && (r.status === "confirmed" || r.status === "pending"));
+        const res = reservations.find((r) => r.table_id === table.id && (r.status === "confirmed" || r.status === "pending" || r.status === "arrived"));
         // Edit mode only: violet = movable table. View mode: normal status colors, badges only.
         const inMergeGroup = editMode && (table.movable !== false);
         const inProposedGroup = !editMode && proposedGroupSet.has(table.id);
@@ -389,6 +395,9 @@ export default function FloorPlan({
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Confirmée
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" /> Arrivé
           </span>
           {proposedGroupIds.length > 0 && (
             <span className="flex items-center gap-1">

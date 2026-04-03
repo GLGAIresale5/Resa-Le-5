@@ -6,6 +6,7 @@ import { useAuth } from "../../lib/auth-context";
 import Sidebar from "../../components/Sidebar";
 import BottomNav from "../../components/BottomNav";
 import PushNotifications from "../../components/PushNotifications";
+import ServiceWorkerUpdater from "../../components/ServiceWorkerUpdater";
 
 // Map route segments to module names
 const ROUTE_TO_MODULE: Record<string, string> = {
@@ -70,6 +71,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-zinc-50">
       <PushNotifications />
+      <ServiceWorkerUpdater />
       <Sidebar />
       <div className="flex min-h-screen flex-1 flex-col overflow-auto pb-14 md:pb-0">
         {children}

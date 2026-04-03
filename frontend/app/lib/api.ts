@@ -310,6 +310,14 @@ export async function noShowReservation(reservationId: string): Promise<Reservat
   return res.json();
 }
 
+export async function arrivedReservation(reservationId: string): Promise<Reservation> {
+  const res = await authFetch(`${API_URL}/reservations/${reservationId}/arrived`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Erreur lors du marquage arrivée");
+  return res.json();
+}
+
 export async function checkPhoneNoShows(restaurantId: string, phone: string): Promise<{ consecutive_no_shows: number }> {
   const res = await authFetch(`${API_URL}/reservations/check-phone?restaurant_id=${restaurantId}&phone=${encodeURIComponent(phone)}`);
   if (!res.ok) return { consecutive_no_shows: 0 };

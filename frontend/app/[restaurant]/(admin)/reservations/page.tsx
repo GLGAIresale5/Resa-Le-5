@@ -17,6 +17,7 @@ import {
   confirmReservation,
   cancelReservation,
   noShowReservation,
+  arrivedReservation,
   updateTable,
   createTable,
   deleteTable,
@@ -114,6 +115,7 @@ const STATUS_LABEL: Record<string, string> = {
   pending: "En attente",
   cancelled: "Annulée",
   no_show: "No show",
+  arrived: "Arrivé",
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -121,6 +123,7 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "text-amber-400",
   cancelled: "text-red-400",
   no_show: "text-zinc-500",
+  arrived: "text-blue-400",
 };
 
 const SOURCE_ICON: Record<string, string> = {
@@ -522,6 +525,11 @@ export default function ReservationsPage() {
     setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
   };
 
+  const handleArrivedReservation = async (resId: string) => {
+    const res = await arrivedReservation(resId);
+    setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
+  };
+
   const handleCancelReservation = async (resId: string) => {
     const res = await updateReservation(resId, { status: "cancelled" });
     setReservations((prev) => prev.map((r) => (r.id === res.id ? res : r)));
@@ -558,7 +566,7 @@ export default function ReservationsPage() {
 
     const byTable = new Map<string, Reservation>();
     serviceReservations
-      .filter((r) => r.status === "confirmed" || r.status === "pending")
+      .filter((r) => r.status === "confirmed" || r.status === "pending" || r.status === "arrived")
       .sort((a, b) => a.time.localeCompare(b.time))
       .forEach((r) => {
         if (!r.table_id) return;
@@ -580,7 +588,7 @@ export default function ReservationsPage() {
   const occupiedTableIds = useMemo(() => {
     const ids = new Set<string>();
     reservations.forEach((r) => {
-      if (r.status === "confirmed" || r.status === "pending") {
+      if (r.status === "confirmed" || r.status === "pending" || r.status === "arrived") {
         if (r.table_id) ids.add(r.table_id);
         r.grouped_table_ids?.forEach((id) => ids.add(id));
       }
@@ -592,7 +600,7 @@ export default function ReservationsPage() {
   const confirmedGroupedIds = useMemo(() => {
     const ids = new Set<string>();
     reservations.forEach((r) => {
-      if (r.status === "confirmed" && r.grouped_table_ids?.length) {
+      if ((r.status === "confirmed" || r.status === "arrived") && r.grouped_table_ids?.length) {
         r.grouped_table_ids.forEach((id) => ids.add(id));
       }
     });
@@ -876,17 +884,27 @@ export default function ReservationsPage() {
                           Valider
                         </button>
                       )}
-                      {res.status === "confirmed" && isNoShowEligible(res.date, res.time) && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); if (confirm("Marquer comme no-show ?")) handleNoShowReservation(res.id); }}
-                          className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/40"
-                        >
-                          No-show
-                        </button>
+                      {res.status === "confirmed" && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleArrivedReservation(res.id); }}
+                            className="px-3 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40"
+                          >
+                            Arrivé
+                          </button>
+                          {isNoShowEligible(res.date, res.time) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); if (confirm("Marquer comme no-show ?")) handleNoShowReservation(res.id); }}
+                              className="px-3 py-1 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/40"
+                            >
+                              No-show
+                            </button>
+                          )}
+                        </div>
                       )}
-                      {res.status === "confirmed" && !isNoShowEligible(res.date, res.time) && (
-                        <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                          Validé
+                      {res.status === "arrived" && (
+                        <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40">
+                          Arrivé
                         </span>
                       )}
                       {res.status === "no_show" && (
@@ -1176,7 +1194,7 @@ export default function ReservationsPage() {
                     .map((res) => (
                       <div
                         key={res.id}
-                        draggable={res.status !== "cancelled"}
+                        draggable={res.status !== "cancelled" && res.status !== "arrived"}
                         onDragStart={(e) => {
                           e.dataTransfer.setData("reservationId", res.id);
                           e.dataTransfer.effectAllowed = "move";
@@ -1184,8 +1202,8 @@ export default function ReservationsPage() {
                         }}
                         onDragEnd={() => setDraggingReservationId(null)}
                         className={`p-4 hover:bg-zinc-800/40 transition-colors ${
-                          res.status === "cancelled" ? "opacity-40" : "cursor-grab active:cursor-grabbing"
-                        } ${draggingReservationId === res.id ? "opacity-50" : ""}`}
+                          res.status === "cancelled" || res.status === "arrived" ? "opacity-100" : "cursor-grab active:cursor-grabbing"
+                        } ${res.status === "cancelled" ? "opacity-40" : ""} ${draggingReservationId === res.id ? "opacity-50" : ""}`}
                       >
                         <div
                           className="flex items-start justify-between gap-2 cursor-pointer"
@@ -1226,17 +1244,27 @@ export default function ReservationsPage() {
                               Valider
                             </button>
                           )}
-                          {res.status === "confirmed" && isNoShowEligible(res.date, res.time) && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); if (confirm("Marquer comme no-show ?")) handleNoShowReservation(res.id); }}
-                              className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 transition-colors"
-                            >
-                              No-show
-                            </button>
+                          {res.status === "confirmed" && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleArrivedReservation(res.id); }}
+                                className="px-3 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40 hover:bg-blue-500/30 transition-colors"
+                              >
+                                Arrivé
+                              </button>
+                              {isNoShowEligible(res.date, res.time) && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); if (confirm("Marquer comme no-show ?")) handleNoShowReservation(res.id); }}
+                                  className="px-3 py-1 rounded-full text-[10px] font-medium bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 transition-colors"
+                                >
+                                  No-show
+                                </button>
+                              )}
+                            </div>
                           )}
-                          {res.status === "confirmed" && !isNoShowEligible(res.date, res.time) && (
-                            <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                              Validé
+                          {res.status === "arrived" && (
+                            <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40">
+                              Arrivé
                             </span>
                           )}
                           {res.status === "no_show" && (
