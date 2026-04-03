@@ -894,7 +894,7 @@ export default function ReservationsPage() {
                       {res.status === "confirmed" && isToday(res.date) && (
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
-                            onClick={(e) => { e.stopPropagation(); handleArrivedReservation(res.id); }}
+                            onClick={(e) => { e.stopPropagation(); if (confirm("Marquer comme arrivé ?")) handleArrivedReservation(res.id); }}
                             className="px-3 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40"
                           >
                             Arrivé
@@ -1259,7 +1259,7 @@ export default function ReservationsPage() {
                           {res.status === "confirmed" && isToday(res.date) && (
                             <div className="flex items-center gap-1.5 shrink-0">
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleArrivedReservation(res.id); }}
+                                onClick={(e) => { e.stopPropagation(); if (confirm("Marquer comme arrivé ?")) handleArrivedReservation(res.id); }}
                                 className="px-3 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40 hover:bg-blue-500/30 transition-colors"
                               >
                                 Arrivé
