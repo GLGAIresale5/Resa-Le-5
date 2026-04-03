@@ -22,8 +22,11 @@ function urlBase64ToUint8Array(base64String: string) {
  */
 export default function PushNotifications() {
   const { restaurant } = useAuth();
-  const RESTAURANT_ID = restaurant?.id ?? "";
+
   useEffect(() => {
+    // Wait until restaurant context is loaded
+    if (!restaurant?.id) return;
+
     if (
       typeof window === "undefined" ||
       !("serviceWorker" in navigator) ||
@@ -53,7 +56,7 @@ export default function PushNotifications() {
         });
 
         const subJson = subscription.toJSON();
-        await fetch(`${API_URL}/push/subscribe?restaurant_id=${RESTAURANT_ID}`, {
+        await fetch(`${API_URL}/push/subscribe?restaurant_id=${restaurant.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -67,7 +70,7 @@ export default function PushNotifications() {
         console.error("[Push] Auto-subscribe error:", err);
       }
     })();
-  }, []);
+  }, [restaurant?.id]);
 
   return null;
 }
