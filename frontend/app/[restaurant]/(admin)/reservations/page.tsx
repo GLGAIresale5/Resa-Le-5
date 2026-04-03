@@ -135,6 +135,13 @@ const SOURCE_ICON: Record<string, string> = {
   web: "🌐",
 };
 
+/** Returns true if the reservation date is today */
+function isToday(resDate: string): boolean {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return resDate === today;
+}
+
 /** Returns true if current time is >= reservation time + 15 min on the given date */
 function isNoShowEligible(resDate: string, resTime: string): boolean {
   const now = new Date();
@@ -884,7 +891,7 @@ export default function ReservationsPage() {
                           Valider
                         </button>
                       )}
-                      {res.status === "confirmed" && (
+                      {res.status === "confirmed" && isToday(res.date) && (
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleArrivedReservation(res.id); }}
@@ -901,6 +908,11 @@ export default function ReservationsPage() {
                             </button>
                           )}
                         </div>
+                      )}
+                      {res.status === "confirmed" && !isToday(res.date) && (
+                        <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                          Validé
+                        </span>
                       )}
                       {res.status === "arrived" && (
                         <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40">
@@ -1244,7 +1256,7 @@ export default function ReservationsPage() {
                               Valider
                             </button>
                           )}
-                          {res.status === "confirmed" && (
+                          {res.status === "confirmed" && isToday(res.date) && (
                             <div className="flex items-center gap-1.5 shrink-0">
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleArrivedReservation(res.id); }}
@@ -1261,6 +1273,11 @@ export default function ReservationsPage() {
                                 </button>
                               )}
                             </div>
+                          )}
+                          {res.status === "confirmed" && !isToday(res.date) && (
+                            <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                              Validé
+                            </span>
                           )}
                           {res.status === "arrived" && (
                             <span className="shrink-0 px-3 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40">
