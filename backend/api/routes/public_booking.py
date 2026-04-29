@@ -2,7 +2,8 @@
 Public booking endpoint — called by the /reserver/[slug] page.
 
 - Looks up the restaurant by slug (or restaurant_id for backwards compat)
-- Creates a reservation with status 'pending' and source 'web'
+- Creates a reservation with status 'confirmed' and source 'web' (auto-confirmation)
+- Sends the confirmation SMS to the guest immediately
 - Sends a push notification to the restaurant owner
 - Auto-assigns a table (or leaves unassigned if full — still creates the reservation)
 """
@@ -14,7 +15,7 @@ from datetime import date
 
 from core.config import settings
 from supabase import create_client
-from api.routes.reservations import _auto_assign_table
+from api.routes.reservations import _auto_assign_table, _send_guest_confirmation
 from api.routes.push import send_push_to_restaurant
 
 router = APIRouter()
@@ -35,7 +36,7 @@ class PublicBookingRequest(BaseModel):
 
 
 class PublicBookingResponse(BaseModel):
-    status: str  # "pending"
+    status: str  # "confirmed"
     message: str
     date: str
     time: str
@@ -164,7 +165,7 @@ async def public_book(
         "time": body.time,
         "duration": 120,
         "source": "web",
-        "status": "pending",
+        "status": "confirmed",
         "notes": body.notes,
     }
 
@@ -173,19 +174,27 @@ async def public_book(
     if not response.data:
         raise HTTPException(status_code=500, detail="Erreur lors de la création de la réservation.")
 
+    created_reservation = response.data[0]
+
+    # Send confirmation SMS to the guest immediately (auto-confirmation)
+    try:
+        _send_guest_confirmation(created_reservation)
+    except Exception:
+        pass
+
     # Send push notification to admin
     full_name_display = f"{body.guest_first_name} {body.guest_last_name}".strip()
     date_str = body.date.strftime("%d/%m/%Y")
     send_push_to_restaurant(
         restaurant_id=rest_id,
         title=f"Nouvelle réservation — {full_name_display}",
-        body=f"{body.guest_count} pers. le {date_str} à {body.time}. À confirmer.",
+        body=f"{body.guest_count} pers. le {date_str} à {body.time}. Confirmée automatiquement.",
         url="/reservations",
     )
 
     return PublicBookingResponse(
-        status="pending",
-        message="Votre demande de réservation a été enregistrée. Nous vous confirmerons dans les plus brefs délais.",
+        status="confirmed",
+        message="Votre réservation est confirmée. Nous avons hâte de vous accueillir !",
         date=body.date.isoformat(),
         time=body.time,
         guest_count=body.guest_count,

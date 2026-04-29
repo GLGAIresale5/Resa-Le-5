@@ -182,10 +182,10 @@ export default function ReserverSlugPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-[#e8e0d4]">Demande envoyée !</h2>
+          <h2 className="text-2xl font-semibold text-[#e8e0d4]">Réservation confirmée !</h2>
           <p className="mt-3 text-[#8a8072] leading-relaxed">
-            Votre demande de réservation a bien été reçue.<br />
-            Nous vous confirmerons votre table par {email ? "email" : "téléphone"} dans les plus brefs délais.
+            Votre table est réservée.<br />
+            Vous allez recevoir un SMS de confirmation. Nous avons hâte de vous accueillir !
           </p>
           <div className="mt-8 rounded-xl bg-[#1a1a1a] p-5 text-left border border-[#2a2a2a]">
             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -250,7 +250,7 @@ export default function ReserverSlugPage() {
       <main className="mx-auto w-full max-w-lg flex-1 px-5 py-6">
         <h2 className="text-xl font-semibold text-[#e8e0d4]">Réserver une table</h2>
         <p className="mt-1 text-sm text-[#8a8072]">
-          Votre réservation sera confirmée par notre équipe.
+          Votre réservation est confirmée immédiatement.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
@@ -433,11 +433,11 @@ export default function ReserverSlugPage() {
             disabled={step === "sending"}
             className="w-full rounded-lg bg-[#c9a96e] py-3.5 text-sm font-semibold text-[#111111] hover:bg-[#d4b87d] transition-colors disabled:opacity-50"
           >
-            {step === "sending" ? "Envoi en cours..." : "Demander une réservation"}
+            {step === "sending" ? "Envoi en cours..." : "Confirmer ma réservation"}
           </button>
 
           <p className="text-center text-xs text-[#5a5550] leading-relaxed">
-            Votre réservation sera confirmée par notre équipe.<br />
+            Confirmation immédiate par SMS.<br />
             Pour toute urgence, appelez-nous directement.
           </p>
         </form>
