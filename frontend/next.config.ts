@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  images: {
+    qualities: [75, 82, 85, 88],
+    formats: ["image/webp"],
+  },
   async headers() {
     return [
       {

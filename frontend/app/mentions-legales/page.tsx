@@ -18,12 +18,14 @@ export default function MentionsLegalesPage() {
             Éditeur du site
           </h2>
           <div className="space-y-1">
-            <p><strong className="text-[#e8e0d4]">GLG Hospitality SAS</strong></p>
-            <p>4, place du village — 94370 Sucy-en-Brie</p>
-            <p>SIRET : à compléter</p>
-            <p>RCS : à compléter</p>
-            <p>N° TVA intracommunautaire : à compléter</p>
-            <p>Directeur de la publication : Baptiste Gallagher</p>
+            <p><strong className="text-[#e8e0d4]">GLG Hospitality</strong> — SAS</p>
+            <p>4-5 place du village — 94370 Sucy-en-Brie</p>
+            <p>SIREN : 940 111 909</p>
+            <p>SIRET (établissement) : 940 111 909 00021</p>
+            <p>RCS Créteil 940 111 909</p>
+            <p>N° TVA intracommunautaire : FR17 940 111 909</p>
+            <p>Code APE : 56.10A — Restauration traditionnelle</p>
+            <p>Directeur de la publication : Baptiste Gaillac</p>
             <p>Téléphone : 09 83 94 46 00</p>
             <p>Email : contact@glghospitality.com</p>
           </div>

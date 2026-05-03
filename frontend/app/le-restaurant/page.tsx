@@ -1,107 +1,22 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 import WebsiteLayout from "../components/WebsiteLayout";
+import RestaurantContent from "../components/restaurant/RestaurantContent";
 
 export const metadata: Metadata = {
-  title: "Le Restaurant",
-  description: "Découvrez Le 5 : brasserie parisienne au coeur de Sucy-en-Brie. Salle de 70 couverts, terrasse de 52 places sur la place du village.",
+  title: "Le Restaurant — Le 5 | Bar · Tapas · Brasserie",
+  description:
+    "Le 5 à Sucy-en-Brie : 70 couverts en salle, 52 places en terrasse sur la place du village. Bar à cocktails, brasserie maison, privatisation possible.",
+  openGraph: {
+    title: "Le Restaurant — Le 5",
+    description: "Brasserie, bar à cocktails et terrasse sur la place du village de Sucy-en-Brie.",
+    images: [{ url: "/images/place-village-large.webp", alt: "Terrasse du 5 sur la place du village" }],
+  },
 };
 
 export default function LeRestaurantPage() {
   return (
-    <WebsiteLayout><div className="min-h-screen">
-      {/* Hero */}
-      <section className="relative h-[50vh] min-h-[350px] flex items-end">
-        <Image
-          src="/images/spritz-terrasse.jpg"
-          alt="Terrasse du 5 sur la place du village"
-          fill
-          className="object-cover"
-          priority
-          quality={85}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-[#111111]/30 to-transparent" />
-        <div className="relative z-10 px-6 pb-10 md:px-12">
-          <h1 className="font-serif text-4xl md:text-5xl text-white mb-2">Le Restaurant</h1>
-          <p className="text-[#c9a96e] tracking-wide">Bar · Tapas · Brasserie</p>
-        </div>
-      </section>
-
-      {/* Photos */}
-      <section className="px-6 md:px-12 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
-          <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-            <Image
-              src="/images/bar.jpg"
-              alt="Le bar du 5"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-            <Image
-              src="/images/terrasse-nuit.jpg"
-              alt="La terrasse du 5 de nuit"
-              fill
-              className="object-cover"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Capacité */}
-      <section className="px-6 py-20 md:px-12 bg-[#0a0a0a]">
-        <div className="max-w-3xl">
-          <h2 className="font-serif text-3xl text-[#e8e0d4] mb-10">Nos Espaces</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-8 border border-[#1a1a1a] rounded-lg">
-              <p className="font-serif text-4xl text-[#c9a96e] mb-2">70</p>
-              <p className="text-[#8a8072] text-sm tracking-wider uppercase">Couverts en salle</p>
-            </div>
-            <div className="text-center p-8 border border-[#1a1a1a] rounded-lg">
-              <p className="font-serif text-4xl text-[#c9a96e] mb-2">52</p>
-              <p className="text-[#8a8072] text-sm tracking-wider uppercase">Places en terrasse</p>
-            </div>
-            <div className="text-center p-8 border border-[#1a1a1a] rounded-lg">
-              <p className="font-serif text-4xl text-[#c9a96e] mb-2">122</p>
-              <p className="text-[#8a8072] text-sm tracking-wider uppercase">Capacité totale</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Ambiance */}
-      <section className="px-6 py-20 md:px-12 max-w-3xl">
-        <h2 className="font-serif text-3xl text-[#e8e0d4] mb-8">L&apos;Ambiance</h2>
-        <div className="space-y-5 text-[#b0a899] leading-relaxed text-lg">
-          <p>
-            Aux beaux jours, la terrasse s&apos;ouvre sur la place du village — l&apos;endroit idéal
-            pour un apéritif au soleil ou un dîner en plein air.
-          </p>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="px-6 py-16 md:px-12 bg-[#0a0a0a] text-center">
-        <h2 className="font-serif text-2xl text-[#e8e0d4] mb-6">
-          Venez nous rendre visite
-        </h2>
-        <div className="flex flex-wrap justify-center gap-4">
-          <Link
-            href="/reserver"
-            className="inline-flex items-center bg-[#c9a96e] text-[#111111] px-8 py-3.5 text-sm font-semibold tracking-wider uppercase hover:bg-[#d4b87d] transition-colors rounded"
-          >
-            Réserver une table
-          </Link>
-          <Link
-            href="/contact"
-            className="inline-flex items-center border border-[#c9a96e]/40 text-[#c9a96e] px-8 py-3.5 text-sm tracking-wider uppercase hover:bg-[#c9a96e]/10 transition-colors rounded"
-          >
-            Nous trouver
-          </Link>
-        </div>
-      </section>
-    </div></WebsiteLayout>
+    <WebsiteLayout>
+      <RestaurantContent />
+    </WebsiteLayout>
   );
 }

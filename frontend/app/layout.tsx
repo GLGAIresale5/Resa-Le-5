@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./lib/auth-context";
+import StructuredData from "./components/StructuredData";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,13 +15,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GLG AI",
-  description: "Gestion de restaurant",
+  metadataBase: new URL("https://le-5.vercel.app"),
+  title: {
+    default: "Le 5 — Bar · Tapas · Brasserie | Sucy-en-Brie",
+    template: "%s | Le 5",
+  },
+  description:
+    "Le 5, brasserie parisienne au coeur de Sucy-en-Brie. Cuisine maison, cocktails signatures, terrasse sur la place du village.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "GLG AI",
+    title: "Le 5",
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -39,6 +45,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#111111" />
+        <StructuredData />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>{children}</AuthProvider>

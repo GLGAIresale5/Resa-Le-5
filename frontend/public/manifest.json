@@ -1,11 +1,11 @@
 {
-  "name": "GLG AI",
-  "short_name": "GLG AI",
-  "description": "Gestion de restaurant",
+  "name": "Le 5 — Bar · Tapas · Brasserie",
+  "short_name": "Le 5",
+  "description": "Bar, tapas et brasserie au cœur de Sucy-en-Brie",
   "start_url": "/login",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#18181b",
+  "background_color": "#111111",
+  "theme_color": "#111111",
   "icons": [
     {
       "src": "/icon-192.png",

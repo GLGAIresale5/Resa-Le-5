@@ -15,10 +15,13 @@ class Settings(BaseSettings):
     # Email alertes stocks & notifications (Resend API — legacy)
     resend_api_key: str = ""
     notification_email: str = "contact@glghospitality.com"
-    # Brevo (SMS transactionnels)
+    # Brevo (SMS + email transactionnels)
     brevo_api_key: str = ""
     # Numéro admin pour notifications SMS (nouvelles réservations web)
     notification_phone: str = ""
+    # Contact (formulaire site public + privatisation)
+    contact_email_to: str = "glg.ai.services01@gmail.com"
+    contact_email_from: str = "contact@glghospitality.com"
     # Web Push (notifications PWA)
     vapid_public_key: str = ""
     vapid_private_key: str = ""
