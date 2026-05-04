@@ -25,7 +25,7 @@ const espaces = [
     image: "/images/cocktail-dragon.webp",
     imageAlt: "Cocktail signature du 5",
     paragraphs: [
-      "Une belle sélection de spiritueux, des cocktails classiques bien faits, des signatures bien à nous, et trois pressions Deck & Donohue brassées à Bonneuil-sur-Marne.",
+      "Une belle sélection de spiritueux, des cocktails classiques bien faits, des signatures bien à nous, et trois pressions Deck & Donohue brassées à Bonneuil-sur-Marne — la ville juste à côté.",
       "Côté vin, on mise sur des références abordables au verre comme à la bouteille, avec quelques pépites sur la carte longue.",
     ],
     align: "right" as const,
@@ -33,11 +33,11 @@ const espaces = [
   {
     id: "terrasse",
     label: "La Terrasse",
-    capacity: "52 places, ombragée, chauffée l'hiver",
+    capacity: "52 places, sous parasols toute l'année",
     image: "/images/terrasse-tables-soir.webp",
     imageAlt: "La terrasse du 5 sur la place du village au soir",
     paragraphs: [
-      "Pleine sud sur la place du village, la terrasse est l'âme du 5 dès qu'il fait beau. Parasols l'été, chauffages et plaids l'hiver, on y reste jusque tard.",
+      "Pleine sud sur la place du village, la terrasse est l'âme du 5 dès qu'il fait beau. Parasols toute l'année, on y reste tant que la météo le permet.",
       "C'est aussi l'endroit idéal pour un afterwork, un brunch dominical ou un apéritif au coucher du soleil.",
     ],
     align: "left" as const,

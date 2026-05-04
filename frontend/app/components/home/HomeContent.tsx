@@ -32,7 +32,7 @@ const espaces = [
   },
   {
     title: "La Terrasse",
-    desc: "52 places sur la place du village, à l'ombre l'été, sous parasols chauffés l'hiver.",
+    desc: "52 places sur la place du village, à l'ombre l'été, sous parasols toute l'année.",
     image: "/images/terrasse-tables-soir.webp",
     href: "/le-restaurant#terrasse",
   },
@@ -58,7 +58,7 @@ const signatures = [
   {
     title: "Tapas à partager",
     line: "Planches charcuterie, fromages, camembert au miel.",
-    image: "/images/terrasse-nuit.webp",
+    image: "/images/salle-table-banquette.webp",
   },
 ];
 
