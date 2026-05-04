@@ -174,7 +174,7 @@ export default function ReserverSlugPage() {
             </div>
             <h2 className="font-serif text-3xl text-[#e8e0d4] mb-3">Réservation confirmée</h2>
             <p className="text-[#8a8072] leading-relaxed">
-              Votre table est réservée. Vous allez recevoir un SMS de confirmation.
+              Votre table est réservée.
               <br />À très vite au 5 !
             </p>
             <div className="mt-8 rounded-xl bg-gradient-to-br from-[#161412] to-[#0f0e0c] p-6 text-left border border-[#1f1c18]">
@@ -290,7 +290,7 @@ export default function ReserverSlugPage() {
               transition={{ duration: 0.3 }}
             >
               <p className="text-sm text-[#8a8072] mb-6">
-                Confirmation immédiate par SMS. Pour les groupes de plus de 12 personnes,
+                Confirmation immédiate. Pour les groupes de plus de 12 personnes,
                 préférez l&apos;onglet privatisation.
               </p>
 
@@ -473,7 +473,7 @@ export default function ReserverSlugPage() {
                 </button>
 
                 <p className="text-center text-xs text-[#5a5550] leading-relaxed">
-                  Confirmation immédiate par SMS. Pour toute urgence, appelez le 09 83 94 46 00.
+                  Confirmation immédiate. Pour toute urgence, appelez le 09 83 94 46 00.
                 </p>
               </form>
             </motion.div>

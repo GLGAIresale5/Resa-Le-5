@@ -106,6 +106,65 @@ const sections: Section[] = [
           { name: "Picon", price: "6,00€ · 10,50€" },
         ],
       },
+      {
+        title: "Vodka & Gin",
+        subtitle: "4cl",
+        items: [
+          { name: "42 Below", price: "6,50€" },
+          { name: "Grey Goose", price: "9,50€" },
+          { name: "Bombay Sapphire", price: "8,00€" },
+          { name: "Bombay Gingembre", price: "8,00€" },
+        ],
+      },
+      {
+        title: "Rhum",
+        subtitle: "4cl",
+        items: [
+          { name: "Bacardi Carta Oro", price: "7,00€" },
+          { name: "Don Papa Masskara", price: "9,50€" },
+          { name: "Diplomatico", price: "9,00€" },
+          { name: "Santa Teresa", price: "12,00€" },
+        ],
+      },
+      {
+        title: "Whisky",
+        subtitle: "4cl",
+        items: [
+          { name: "William Lawson", price: "6,00€" },
+          { name: "Jameson", price: "7,00€" },
+          { name: "Jack Daniels", price: "8,00€" },
+          { name: "Glenmorangie", price: "10,00€" },
+          { name: "Lagavulin 16 ans", price: "13,00€" },
+        ],
+      },
+      {
+        title: "Tequila",
+        subtitle: "4cl",
+        items: [
+          { name: "Cazadores Reposado", price: "8,00€" },
+          { name: "Patron Silver / Reposado / Anejo", price: "10€ / 11€ / 11,50€" },
+        ],
+      },
+      {
+        title: "Liqueurs 6cl",
+        items: [
+          { name: "Bailey's", price: "7€" },
+          { name: "Get 27 ou 31", price: "7€" },
+          { name: "Manzana", price: "7€" },
+          { name: "Limoncello", price: "8€" },
+          { name: "Belle Gnôle Sapin", price: "9€" },
+        ],
+      },
+      {
+        title: "Digestifs 4cl",
+        items: [
+          { name: "Amaretto", price: "8€" },
+          { name: "Calvados", price: "8€" },
+          { name: "Cognac", price: "9€" },
+          { name: "Armagnac", price: "10€" },
+          { name: "Belle Gnôle Whisky Châtaigne", price: "8€" },
+        ],
+      },
     ],
   },
   {
@@ -218,66 +277,6 @@ const sections: Section[] = [
         items: [
           { name: "Classique", desc: "Alcool pur, Rhum Arrangé, Spicy Tequila, Baby Guiness, Orgasme", price: "4€ · 15€ · 28€" },
           { name: "Premium", desc: "B50, Jager bomb, Tiramisu, Méduse, Monkey's Brain", price: "5,50€ · 20€ · 35€" },
-        ],
-      },
-      {
-        title: "Liqueurs 6cl",
-        items: [
-          { name: "Bailey's", price: "7€" },
-          { name: "Get 27 ou 31", price: "7€" },
-          { name: "Manzana", price: "7€" },
-          { name: "Limoncello", price: "8€" },
-          { name: "Belle Gnôle Sapin", price: "9€" },
-        ],
-      },
-      {
-        title: "Digestifs 4cl",
-        items: [
-          { name: "Amaretto", price: "8€" },
-          { name: "Calvados", price: "8€" },
-          { name: "Cognac", price: "9€" },
-          { name: "Armagnac", price: "10€" },
-          { name: "Belle Gnôle Whisky Châtaigne", price: "8€" },
-        ],
-      },
-      {
-        title: "Vodka & Gin",
-        subtitle: "4cl",
-        items: [
-          { name: "42 Below", price: "6,50€" },
-          { name: "Grey Goose", price: "9,50€" },
-          { name: "Bombay Sapphire", price: "8,00€" },
-          { name: "Bombay Gingembre", price: "8,00€" },
-        ],
-      },
-      {
-        title: "Rhum",
-        subtitle: "4cl",
-        items: [
-          { name: "Bacardi Carta Oro", price: "7,00€" },
-          { name: "Don Papa Masskara", price: "9,50€" },
-          { name: "Diplomatico", price: "9,00€" },
-          { name: "Santa Teresa", price: "12,00€" },
-        ],
-      },
-      {
-        title: "Whisky",
-        subtitle: "4cl",
-        items: [
-          { name: "William Lawson", price: "6,00€" },
-          { name: "Jameson", price: "7,00€" },
-          { name: "Jack Daniels", price: "8,00€" },
-          { name: "Glenmorangie", price: "10,00€" },
-          { name: "Lagavulin 16 ans", price: "13,00€" },
-        ],
-      },
-      {
-        title: "Tequila",
-        subtitle: "4cl",
-        items: [
-          { name: "Cazadores Reposado", price: "8,00€" },
-          { name: "Patron Silver / Reposado / Anejo", price: "10€ / 11€ / 11,50€" },
-          { name: "Adjuvant", desc: "Coca, Jus de fruits, Eau gazeuse…", price: "2,50€" },
         ],
       },
     ],
@@ -400,23 +399,22 @@ export default function LaCartePage() {
   const [activeSection, setActiveSection] = useState(sections[0].id);
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  // Intersection Observer to track which section is visible
+  // Scroll-spy : trouve la section dont le top a passé l'offset (30% de la viewport)
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Find the entry with the largest intersection ratio
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible.length > 0 && visible[0].target.id) {
-          setActiveSection(visible[0].target.id);
-        }
-      },
-      { rootMargin: "-20% 0px -60% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] }
-    );
-
-    sectionRefs.current.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    const handleScroll = () => {
+      const offset = window.innerHeight * 0.3;
+      let current = sections[0].id;
+      for (const section of sections) {
+        const el = sectionRefs.current.get(section.id);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top - offset <= 0) current = section.id;
+      }
+      setActiveSection(current);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (

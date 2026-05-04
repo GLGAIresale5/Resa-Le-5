@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const navItems = [
@@ -38,9 +37,9 @@ export default function WebsiteSidebar() {
     <>
       {/* Mobile header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f]/95 backdrop-blur-md border-b border-[#2a2a2a] h-16 flex items-center justify-between px-5">
-        <Link href="/" className="flex items-center gap-3">
-          <Image src="/images/logo.png" alt="Le 5" width={32} height={38} className="h-[38px] w-auto" />
-          <span className="font-serif text-lg text-[#c9a96e] tracking-wider">LE 5</span>
+        <Link href="/" className="flex items-baseline gap-2.5">
+          <span className="font-serif text-3xl text-[#c9a96e] leading-none">5</span>
+          <span className="font-serif text-base text-[#e8e0d4] tracking-[0.4em]">LE 5</span>
         </Link>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -70,20 +69,18 @@ export default function WebsiteSidebar() {
         `}
       >
         {/* Logo */}
-        <div className="p-8 pb-6 flex flex-col items-center">
-          <Link href="/" className="flex flex-col items-center gap-2">
-            <Image
-              src="/images/logo.png"
-              alt="Le 5"
-              width={80}
-              height={96}
-              className="h-[96px] w-auto"
-              priority
-            />
-            <div className="text-center mt-1">
-              <p className="text-[#c9a96e] font-serif text-xl tracking-[0.3em] ml-[0.3em]">LE 5</p>
-              <p className="text-[#8a8072] text-[10px] tracking-[0.2em] mt-1.5 uppercase font-light ml-[0.2em]">Bar · Tapas · Brasserie</p>
-            </div>
+        <div className="px-8 pt-12 pb-8 flex flex-col items-center">
+          <Link href="/" className="flex flex-col items-center group">
+            <span className="font-serif text-[5.5rem] leading-[0.85] text-[#c9a96e] group-hover:text-[#d4b87d] transition-colors duration-500">
+              5
+            </span>
+            <div className="mt-5 h-px w-10 bg-gradient-to-r from-transparent via-[#c9a96e]/50 to-transparent" />
+            <p className="font-serif text-[15px] text-[#e8e0d4] tracking-[0.45em] mt-4 ml-[0.45em]">
+              LE 5
+            </p>
+            <p className="text-[#8a8072] text-[9px] tracking-[0.35em] uppercase font-light mt-2 ml-[0.18em]">
+              Bar · Tapas · Brasserie
+            </p>
           </Link>
         </div>
 
