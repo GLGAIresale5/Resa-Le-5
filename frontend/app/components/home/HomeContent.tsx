@@ -58,7 +58,7 @@ const signatures = [
   {
     title: "Tapas à partager",
     line: "Planches charcuterie, fromages, camembert au miel.",
-    image: "/images/salle-table-banquette.webp",
+    image: "/images/tapas-planches.webp",
   },
 ];
 

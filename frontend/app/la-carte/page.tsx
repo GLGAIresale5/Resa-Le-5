@@ -428,7 +428,7 @@ export default function LaCartePage() {
 
         {/* Tab navigation */}
         <nav className="sticky top-16 lg:top-0 z-30 bg-[#111111]/95 backdrop-blur-md border-b border-[#1a1a1a]">
-          <div className="flex overflow-x-auto no-scrollbar px-6 md:px-12 justify-center">
+          <div className="flex overflow-x-auto no-scrollbar px-6 md:px-12 justify-start sm:justify-center">
             {sections.map((s) => (
               <a
                 key={s.id}
