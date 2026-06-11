@@ -111,6 +111,7 @@ export interface Reservation {
   source: ReservationSource;
   status: ReservationStatus;
   notes?: string;
+  table_label?: string | null;   // n° de table en texte libre (remplace le plan de salle)
   grouped_table_ids?: string[];
   created_at?: string;
   updated_at?: string;
@@ -238,6 +239,7 @@ export interface ReservationCreate {
   source?: ReservationSource;
   status?: ReservationStatus;
   notes?: string;
+  table_label?: string | null;
   grouped_table_ids?: string[];
 }
 

@@ -405,22 +405,14 @@ async def create_reservation(body: ReservationCreate, user_id: str = Depends(get
     if isinstance(data.get("date"), object) and hasattr(data["date"], "isoformat"):
         data["date"] = data["date"].isoformat()
 
-    # Auto-assign table if not provided
-    if not data.get("table_id"):
-        assigned = _auto_assign_table(
-            supabase,
-            restaurant_id=str(body.restaurant_id),
-            guest_count=body.guest_count,
-            res_date=data["date"],
-            res_time=body.time,
-            duration=body.duration or 120,
-        )
-        if assigned is None:
-            raise HTTPException(
-                status_code=409,
-                detail="Aucune table disponible pour ce créneau. Le restaurant est complet."
-            )
-        data["table_id"] = assigned
+    # Plus d'auto-assignation de table : l'assignation se fait via le label texte
+    # (champ table_label), saisi manuellement. table_id reste NULL si non fourni —
+    # plus de 409 "complet", on peut toujours ajouter une réservation.
+
+    # Robustesse déploiement : si la migration 015 (colonne table_label) n'est pas
+    # encore appliquée, ne pas pousser la clé quand elle est vide → l'insert reste valide.
+    if data.get("table_label") is None:
+        data.pop("table_label", None)
 
     response = (
         supabase.table("reservations")

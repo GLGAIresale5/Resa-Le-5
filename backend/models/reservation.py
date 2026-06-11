@@ -97,6 +97,7 @@ class Reservation(BaseModel):
     source: str = "manual"
     status: str = "confirmed"
     notes: Optional[str] = None
+    table_label: Optional[str] = None  # n° de table en texte libre (remplace le plan de salle)
     grouped_table_ids: List[UUID] = []  # tables groupées pour ce service
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -115,6 +116,7 @@ class ReservationCreate(BaseModel):
     source: str = "manual"
     status: str = "confirmed"
     notes: Optional[str] = None
+    table_label: Optional[str] = None
     grouped_table_ids: List[UUID] = []
 
 
@@ -130,6 +132,7 @@ class ReservationUpdate(BaseModel):
     source: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+    table_label: Optional[str] = None
     grouped_table_ids: Optional[List[UUID]] = None
 
 

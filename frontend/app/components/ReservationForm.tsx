@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Reservation, ReservationCreate, ReservationSource, RestaurantTable } from "../types";
+import { Reservation, ReservationCreate, ReservationSource } from "../types";
 import { checkPhoneNoShows } from "../lib/api";
 
 interface ReservationFormProps {
   restaurantId: string;
-  tables: RestaurantTable[];
   initialDate?: string;       // "YYYY-MM-DD"
   reservation?: Reservation;  // if set → edit mode
   onSubmit: (data: ReservationCreate) => Promise<void>;
@@ -36,7 +35,6 @@ function splitName(fullName: string): { first: string; last: string } {
 
 export default function ReservationForm({
   restaurantId,
-  tables,
   initialDate,
   reservation,
   onSubmit,
@@ -55,12 +53,12 @@ export default function ReservationForm({
   const [time, setTime] = useState((reservation?.time ?? "19:30").slice(0, 5));
   const [duration, setDuration] = useState(reservation?.duration ?? 120);
   const [source, setSource] = useState<ReservationSource>(reservation?.source ?? "phone");
-  const [tableId, setTableId] = useState(reservation?.table_id ?? "");
+  const [tableLabel, setTableLabel] = useState(reservation?.table_label ?? "");
   const [notes, setNotes] = useState(reservation?.notes ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noShowCount, setNoShowCount] = useState(0);
-  const phoneCheckTimer = useRef<ReturnType<typeof setTimeout>>();
+  const phoneCheckTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Check no-show history when phone changes (debounced)
   useEffect(() => {
@@ -94,7 +92,7 @@ export default function ReservationForm({
         duration,
         source,
         status: reservation?.status ?? "confirmed",
-        table_id: tableId || null,
+        table_label: tableLabel.trim() || null,
         notes: notes.trim() || undefined,
       });
     } catch (err) {
@@ -188,7 +186,7 @@ export default function ReservationForm({
         </div>
       )}
 
-      {/* Heure + Durée */}
+      {/* Date + Heure */}
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
           <label className="text-xs text-zinc-400">Date *</label>
@@ -217,7 +215,7 @@ export default function ReservationForm({
       <div className="flex flex-col gap-1">
         <label className="text-xs text-zinc-400">Durée</label>
         <div className="flex gap-2">
-          {[60, 90, 120, 150, 180].map((d) => (
+          {([[60, "1h"], [90, "1h30"], [120, "2h"], [150, "2h30"], [180, "3h"]] as const).map(([d, lbl]) => (
             <button
               key={d}
               type="button"
@@ -228,30 +226,22 @@ export default function ReservationForm({
                   : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600"
               }`}
             >
-              {d}min
+              {lbl}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Table (optionnel) */}
-      {tables.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-400">Table (optionnel)</label>
-          <select
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
-            value={tableId}
-            onChange={(e) => setTableId(e.target.value)}
-          >
-            <option value="">— Non assignée —</option>
-            {tables.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} ({t.capacity} pers.)
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Table (optionnel, texte libre) */}
+      <div className="flex flex-col gap-1">
+        <label className="text-xs text-zinc-400">Table (optionnel)</label>
+        <input
+          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+          placeholder="Ex : T6, Terrasse 2, Bar..."
+          value={tableLabel}
+          onChange={(e) => setTableLabel(e.target.value)}
+        />
+      </div>
 
       {/* Notes */}
       <div className="flex flex-col gap-1">

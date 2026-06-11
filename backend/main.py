@@ -21,6 +21,8 @@ app.add_middleware(
         "https://glg-ai.vercel.app",
         "https://glgai.vercel.app",
     ],
+    # Autorise les déploiements de preview Vercel (le-5-<hash|git-branch>-…vercel.app)
+    allow_origin_regex=r"https://le-5-[a-z0-9-]+-glgairesale5s-projects\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
