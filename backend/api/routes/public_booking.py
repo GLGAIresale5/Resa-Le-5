@@ -138,6 +138,34 @@ async def public_book(
                             detail=f"Le service {svc['name']} n'est pas disponible le {body.date.strftime('%d/%m/%Y')}. Veuillez choisir un autre créneau.",
                         )
 
+    # Check recurring closures (règles hebdo — weekday en convention JS getDay : 0=dimanche)
+    # L'enforcement ne dépend ainsi PAS de la matérialisation côté client.
+    js_weekday = (body.date.weekday() + 1) % 7
+    try:
+        rec = supabase.table("recurring_closures").select("*").eq(
+            "restaurant_id", rest_id
+        ).eq("weekday", js_weekday).execute()
+        rec_rules = rec.data or []
+    except Exception:
+        rec_rules = []  # table absente (migration 016 pas encore appliquée) — tolérant
+    for rule in rec_rules:
+        if rule["service"] is None:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Le restaurant est fermé le {body.date.strftime('%d/%m/%Y')}. Veuillez choisir une autre date.",
+            )
+        req_min = _time_to_minutes(body.time)
+        service_hours = restaurant.get("service_hours", {})
+        for svc in service_hours.get("services", []):
+            if svc["name"].lower() == rule["service"].lower():
+                start = _time_to_minutes(svc.get("start", "00:00"))
+                end = _time_to_minutes(svc.get("end", "23:59"))
+                if start <= req_min < end:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Le service {svc['name']} n'est pas disponible le {body.date.strftime('%d/%m/%Y')}. Veuillez choisir un autre créneau.",
+                    )
+
     full_name = f"{body.guest_first_name.strip()} {body.guest_last_name.strip()}".strip()
 
     # Try to auto-assign a table (non-blocking — still accept if no table available)

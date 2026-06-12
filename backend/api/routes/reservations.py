@@ -13,6 +13,7 @@ from models.reservation import (
 )
 from pydantic import BaseModel
 from supabase import create_client
+from postgrest.exceptions import APIError
 
 router = APIRouter()
 
@@ -747,7 +748,23 @@ async def create_block(body: ReservationBlockCreate, user_id: str = Depends(get_
     data = body.model_dump()
     data["restaurant_id"] = str(data["restaurant_id"])
     data["date"] = data["date"].isoformat()
-    result = supabase.table("reservation_blocks").insert(data).execute()
+    try:
+        result = supabase.table("reservation_blocks").insert(data).execute()
+    except APIError as e:
+        if getattr(e, "code", None) == "23505":
+            # Déjà existant — idempotent : renvoyer le block en place
+            q = (
+                supabase.table("reservation_blocks")
+                .select("*")
+                .eq("restaurant_id", data["restaurant_id"])
+                .eq("date", data["date"])
+            )
+            q = q.is_("service", "null") if data.get("service") is None else q.eq("service", data["service"])
+            existing = q.limit(1).execute()
+            if existing.data:
+                return existing.data[0]
+            raise HTTPException(status_code=409, detail="Blocage déjà existant pour cette date/service")
+        raise
     if not result.data:
         raise HTTPException(status_code=400, detail="Blocage déjà existant pour cette date/service")
     return result.data[0]

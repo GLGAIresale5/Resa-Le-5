@@ -1,6 +1,6 @@
 // Service Worker for GLG AI — Push Notifications + Auto-update
 // Change this version string on each deploy to trigger an update
-const SW_VERSION = "2026-06-12-resa-fermetures";
+const SW_VERSION = "2026-06-12-fermetures-v2";
 
 self.addEventListener("install", (event) => {
   // Activate immediately — don't wait for old SW to stop
