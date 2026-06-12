@@ -8,6 +8,7 @@ import {
   Reservation,
   ReservationCreate,
   StockItem,
+  StockCategory,
   Delivery,
   DeliveryScanResult,
   OrderItem,

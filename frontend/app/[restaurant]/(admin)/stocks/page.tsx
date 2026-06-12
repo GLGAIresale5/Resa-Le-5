@@ -35,7 +35,7 @@ import { useAuth } from "../../../lib/auth-context";
 type Tab = "stocks" | "commande" | "agent";
 type StockMode = "flux_tendu" | "equilibre" | "stock";
 
-const CATEGORY_LABELS: Record<StockCategory, string> = {
+const CATEGORY_LABELS: Partial<Record<StockCategory, string>> = {
   soft: "Soft & Jus",
   spiritueux: "Spiritueux",
   bieres: "Bières",
