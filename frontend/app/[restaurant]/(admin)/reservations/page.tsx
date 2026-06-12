@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import ReservationForm from "../../../components/ReservationForm";
 import ClosuresCalendar from "../../../components/ClosuresCalendar";
+import ReservationsCalendar from "../../../components/ReservationsCalendar";
 import {
   fetchReservations,
   createReservation,
@@ -51,15 +52,7 @@ const SOURCE_ICON: Record<string, string> = {
   web: "🌐",
 };
 
-const STATUS_DOT: Record<string, string> = {
-  confirmed: "bg-emerald-400",
-  pending: "bg-amber-400",
-  arrived: "bg-emerald-400",
-  no_show: "bg-zinc-600",
-  cancelled: "bg-zinc-600",
-};
-
-type ViewMode = "jour" | "tout" | "calendrier";
+type ViewMode = "jour" | "tout" | "calendrier" | "fermetures";
 
 export default function ReservationsPage() {
   const { restaurant } = useAuth();
@@ -79,12 +72,15 @@ export default function ReservationsPage() {
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
 
   // ── Chargements ────────────────────────────────────────────────────────────
+  const [allError, setAllError] = useState<string | null>(null);
   const loadAll = useCallback(async () => {
     if (!RESTAURANT_ID) return;
     try {
       setAllReservations(await fetchReservations(RESTAURANT_ID));
+      setAllError(null);
     } catch (e) {
       console.error(e);
+      setAllError("Impossible de charger les réservations — vérifie ta connexion et rouvre l'onglet.");
     }
   }, [RESTAURANT_ID]);
 
@@ -107,11 +103,15 @@ export default function ReservationsPage() {
   }, [loadAll]);
 
   // ── Mise à jour locale des listes ────────────────────────────────────────────
+  // Date-aware : une résa déplacée vers une autre date sort de la vue Jour
+  // (ou y entre) immédiatement, sans attendre un refetch.
   const applyRes = useCallback((updated: Reservation) => {
-    const upd = (arr: Reservation[]) => arr.map((r) => (r.id === updated.id ? updated : r));
-    setDayReservations(upd);
-    setAllReservations(upd);
-  }, []);
+    setDayReservations((arr) => {
+      const without = arr.filter((r) => r.id !== updated.id);
+      return updated.date === selectedDate ? [...without, updated] : without;
+    });
+    setAllReservations((arr) => arr.map((r) => (r.id === updated.id ? updated : r)));
+  }, [selectedDate]);
 
   const addRes = useCallback((r: Reservation) => {
     setAllReservations((prev) => [...prev, r]);
@@ -129,7 +129,7 @@ export default function ReservationsPage() {
     closePanel();
     // Feedback : afficher la résa créée là où elle est visible
     setSelectedDate(res.date);
-    if (res.date < todayStr() && view !== "tout") setView("jour");
+    if (res.date < todayStr() && view === "tout") setView("jour");
   };
 
   const handleUpdate = async (data: ReservationCreate) => {
@@ -177,7 +177,6 @@ export default function ReservationsPage() {
       onClick={() => openEdit(res)}
       className="flex items-center gap-3 px-4 md:px-5 py-3.5 cursor-pointer hover:bg-zinc-800/50 active:bg-zinc-800/70 transition-colors"
     >
-      <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[res.status] ?? "bg-zinc-600"}`} aria-hidden />
       <div className="w-12 shrink-0 text-sm font-medium text-zinc-400">{res.time?.slice(0, 5)}</div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -205,7 +204,8 @@ export default function ReservationsPage() {
               <h1 className="text-base md:text-lg font-semibold">Réservations</h1>
               {view === "jour" && <p className="text-xs text-zinc-400 mt-0.5 capitalize">{formatLongDate(selectedDate)}</p>}
               {view === "tout" && <p className="text-xs text-zinc-400 mt-0.5">À venir · ordre chronologique</p>}
-              {view === "calendrier" && <p className="text-xs text-zinc-400 mt-0.5">Fermer un jour ou un service</p>}
+              {view === "calendrier" && <p className="text-xs text-zinc-400 mt-0.5">Vue mensuelle</p>}
+              {view === "fermetures" && <p className="text-xs text-zinc-400 mt-0.5">Fermer un jour ou un service</p>}
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {view === "jour" && (
@@ -236,7 +236,7 @@ export default function ReservationsPage() {
                   </button>
                 </>
               )}
-              {view !== "calendrier" && (
+              {view !== "fermetures" && (
                 <button
                   onClick={openCreate}
                   className="h-9 px-3 rounded text-sm bg-white text-zinc-900 font-medium hover:bg-zinc-100 transition-colors whitespace-nowrap"
@@ -247,10 +247,10 @@ export default function ReservationsPage() {
             </div>
           </div>
 
-          {/* Toggle Jour / Tout / Fermetures */}
-          <div className="flex items-center gap-2 overflow-x-auto">
+          {/* Toggle Jour / Tout / Calendrier — Fermetures déporté à droite */}
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-0.5 bg-zinc-800 border border-zinc-700 rounded p-0.5 shrink-0">
-              {([["jour", "Jour"], ["tout", "Tout"], ["calendrier", "Fermetures"]] as const).map(([v, label]) => (
+              {([["jour", "Jour"], ["tout", "Tout"], ["calendrier", "Calendrier"]] as const).map(([v, label]) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
@@ -270,13 +270,33 @@ export default function ReservationsPage() {
                 Aujourd'hui
               </button>
             )}
+            <button
+              onClick={() => setView("fermetures")}
+              className={`ml-auto shrink-0 px-3.5 py-1.5 rounded text-xs font-medium border transition-colors whitespace-nowrap ${
+                view === "fermetures"
+                  ? "bg-red-500/20 border-red-500/50 text-red-200"
+                  : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
+              }`}
+            >
+              Fermetures
+            </button>
           </div>
         </div>
 
         {/* Zone scrollable */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          {view === "calendrier" ? (
+          {view === "fermetures" ? (
             <ClosuresCalendar restaurantId={RESTAURANT_ID} services={services} />
+          ) : view === "calendrier" ? (
+            allError ? (
+              <div className="flex items-center justify-center py-24 text-red-400 text-sm px-6 text-center">{allError}</div>
+            ) : (
+              <ReservationsCalendar
+                reservations={allReservations}
+                onEdit={openEdit}
+                onAdd={(d) => { setSelectedDate(d); openCreate(); }}
+              />
+            )
           ) : loading ? (
             <div className="flex items-center justify-center py-24 text-zinc-500 text-sm">Chargement…</div>
           ) : error ? (
@@ -299,7 +319,9 @@ export default function ReservationsPage() {
           ) : (
             // ── Vue TOUT (chronologique) ──
             <div className="mx-auto w-full max-w-3xl pb-6">
-              {toutGroups.length === 0 ? (
+              {allError ? (
+                <div className="flex items-center justify-center py-24 text-red-400 text-sm px-6 text-center">{allError}</div>
+              ) : toutGroups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-zinc-500 text-sm gap-2">
                   <span className="text-2xl">📅</span>
                   <p>Aucune réservation à venir</p>
@@ -333,7 +355,7 @@ export default function ReservationsPage() {
         {showPanel && (
           <div className="p-4 pb-[calc(3.5rem+env(safe-area-inset-bottom)+1.5rem)] md:pb-4">
             <ReservationForm
-              key={editingReservation?.id ?? "new"}
+              key={editingReservation?.id ?? `new-${selectedDate}`}
               restaurantId={RESTAURANT_ID}
               initialDate={selectedDate}
               reservation={editingReservation ?? undefined}

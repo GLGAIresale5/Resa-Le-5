@@ -48,7 +48,9 @@ export default function ReservationForm({
   const [guestLast, setGuestLast] = useState(parsed.last);
   const [guestPhone, setGuestPhone] = useState(reservation?.guest_phone ?? "");
   const [guestEmail, setGuestEmail] = useState(reservation?.guest_email ?? "");
-  const [guestCount, setGuestCount] = useState(reservation?.guest_count ?? 2);
+  // Stocké en texte pour permettre de vider le champ pendant la saisie ;
+  // la validation se fait à l'enregistrement.
+  const [guestCount, setGuestCount] = useState(String(reservation?.guest_count ?? 2));
   const [date, setDate] = useState(reservation?.date ?? initialDate ?? "");
   const [time, setTime] = useState((reservation?.time ?? "19:30").slice(0, 5));
   const [duration, setDuration] = useState(reservation?.duration ?? 120);
@@ -77,6 +79,9 @@ export default function ReservationForm({
     if (!guestFirst.trim()) { setError("Le prénom est obligatoire"); return; }
     if (!guestPhone.trim()) { setError("Le numéro de téléphone est obligatoire"); return; }
     if (!date) { setError("La date est obligatoire"); return; }
+    const count = parseInt(guestCount, 10);
+    if (Number.isNaN(count) || count < 1) { setError("Le nombre de couverts est obligatoire"); return; }
+    if (count > 30) { setError("Au-delà de 30 couverts, passe par une privatisation."); return; }
     setError(null);
     setLoading(true);
     try {
@@ -86,7 +91,7 @@ export default function ReservationForm({
         guest_name: fullName,
         guest_phone: guestPhone.trim() || undefined,
         guest_email: guestEmail.trim() || undefined,
-        guest_count: guestCount,
+        guest_count: count,
         date,
         time,
         duration,
@@ -143,11 +148,13 @@ export default function ReservationForm({
           <label className="text-xs text-zinc-400">Couverts *</label>
           <input
             type="number"
+            inputMode="numeric"
             min={1}
             max={30}
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+            placeholder="2"
+            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
             value={guestCount}
-            onChange={(e) => setGuestCount(parseInt(e.target.value) || 1)}
+            onChange={(e) => setGuestCount(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
