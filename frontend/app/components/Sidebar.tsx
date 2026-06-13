@@ -82,15 +82,15 @@ export default function Sidebar() {
     });
 
   return (
-    <aside className="hidden md:flex h-screen flex-col border-r border-zinc-200 bg-white w-16 lg:w-56 transition-all duration-200">
+    <aside className="hidden md:flex h-screen flex-col border-r border-neutral-800 bg-neutral-950 w-16 lg:w-56 transition-all duration-200">
       {/* Brand */}
-      <div className="flex items-center gap-3 border-b border-zinc-100 px-3 lg:px-5 py-5 justify-center lg:justify-start">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900">
-          <span className="text-xs font-bold text-white">G</span>
+      <div className="flex items-center gap-3 border-b border-neutral-800 px-3 lg:px-5 py-5 justify-center lg:justify-start">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white">
+          <span className="text-xs font-bold text-neutral-950">G</span>
         </div>
         <div className="min-w-0 hidden lg:block">
-          <p className="truncate text-sm font-semibold text-zinc-900">GLG AI</p>
-          <p className="truncate text-xs text-zinc-400">{restaurant?.name ?? "Restaurant"}</p>
+          <p className="truncate text-sm font-semibold tracking-tight text-white">GLG AI</p>
+          <p className="truncate text-xs text-neutral-500">{restaurant?.name ?? "Restaurant"}</p>
         </div>
       </div>
 
@@ -105,8 +105,8 @@ export default function Sidebar() {
                   href={item.children[0].href}
                   className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition justify-center lg:justify-start ${
                     isGroupActive
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                      ? "bg-neutral-900 text-white"
+                      : "text-neutral-400 hover:bg-neutral-900/70 hover:text-white"
                   }`}
                   title={item.label}
                 >
@@ -115,7 +115,7 @@ export default function Sidebar() {
                 </Link>
                 {isGroupActive && (
                   <>
-                    <div className="hidden lg:flex ml-4 flex-col gap-0.5 border-l border-zinc-100 pl-3 mt-0.5">
+                    <div className="hidden lg:flex ml-4 flex-col gap-0.5 border-l border-neutral-800 pl-3 mt-0.5">
                       {item.children.map((child) => {
                         const isActive = pathname === child.href || pathname.startsWith(child.href + "/");
                         return (
@@ -124,8 +124,8 @@ export default function Sidebar() {
                             href={child.href}
                             className={`rounded-lg px-3 py-2 text-sm transition ${
                               isActive
-                                ? "bg-zinc-900 font-medium text-white"
-                                : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                                ? "bg-neutral-900 font-medium text-white"
+                                : "text-neutral-400 hover:bg-neutral-900/70 hover:text-white"
                             }`}
                           >
                             {child.label}
@@ -142,8 +142,8 @@ export default function Sidebar() {
                             href={child.href}
                             className={`flex items-center justify-center rounded-lg px-1 py-1.5 text-[10px] transition ${
                               isActive
-                                ? "bg-zinc-900 font-medium text-white"
-                                : "text-zinc-400 hover:bg-zinc-50 hover:text-zinc-900"
+                                ? "bg-neutral-900 font-medium text-white"
+                                : "text-neutral-500 hover:bg-neutral-900/70 hover:text-white"
                             }`}
                           >
                             {child.label}
@@ -164,17 +164,17 @@ export default function Sidebar() {
               href={item.soon ? "#" : item.href}
               className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition justify-center lg:justify-start ${
                 isActive
-                  ? "bg-zinc-900 text-white"
+                  ? "bg-neutral-900 text-white"
                   : item.soon
-                  ? "cursor-default text-zinc-300"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                  ? "cursor-default text-neutral-500"
+                  : "text-neutral-400 hover:bg-neutral-900/70 hover:text-white"
               }`}
               title={item.label}
             >
               {item.icon}
               <span className="hidden lg:inline">{item.label}</span>
               {item.soon && (
-                <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 hidden lg:inline">
+                <span className="rounded-full bg-neutral-800 px-1.5 py-0.5 text-[10px] font-medium text-neutral-400 hidden lg:inline">
                   Bientôt
                 </span>
               )}
@@ -184,13 +184,13 @@ export default function Sidebar() {
       </nav>
 
       {/* Settings — pinned at bottom */}
-      <div className="mt-auto border-t border-zinc-100 p-2 lg:p-3">
+      <div className="mt-auto border-t border-neutral-800 p-2 lg:p-3">
         <Link
           href={`/${slug}/parametres`}
           className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition justify-center lg:justify-start ${
             pathname.includes("/parametres")
-              ? "bg-zinc-900 text-white"
-              : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+              ? "bg-neutral-900 text-white"
+              : "text-neutral-400 hover:bg-neutral-900/70 hover:text-white"
           }`}
           title="Paramètres"
         >

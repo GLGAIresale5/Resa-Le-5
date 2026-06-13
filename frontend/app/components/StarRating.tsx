@@ -4,7 +4,7 @@ export default function StarRating({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <svg
           key={i}
-          className={`h-4 w-4 ${i <= rating ? "text-amber-400" : "text-zinc-200"}`}
+          className={`h-4 w-4 ${i <= rating ? "text-amber-400" : "text-neutral-600"}`}
           viewBox="0 0 20 20"
           fill="currentColor"
         >

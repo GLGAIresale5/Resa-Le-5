@@ -6,9 +6,9 @@ import StarRating from "./StarRating";
 import { generateResponse, approveResponse } from "../lib/api";
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  google: { label: "Google", color: "bg-blue-100 text-blue-700" },
-  tripadvisor: { label: "TripAdvisor", color: "bg-green-100 text-green-700" },
-  thefork: { label: "TheFork", color: "bg-orange-100 text-orange-700" },
+  google: { label: "Google", color: "bg-blue-500/15 text-blue-300" },
+  tripadvisor: { label: "TripAdvisor", color: "bg-green-500/15 text-green-300" },
+  thefork: { label: "TheFork", color: "bg-orange-500/15 text-orange-300" },
 };
 
 function formatDate(dateStr?: string) {
@@ -42,7 +42,7 @@ export default function ReviewCard({
 
   const source = SOURCE_LABELS[review.source] ?? {
     label: review.source,
-    color: "bg-zinc-100 text-zinc-600",
+    color: "bg-neutral-800 text-neutral-300",
   };
 
   async function handleGenerate() {
@@ -82,7 +82,7 @@ export default function ReviewCard({
 
   return (
     <div
-      className={`rounded-xl border bg-white shadow-sm transition-opacity ${approved ? "opacity-60" : ""}`}
+      className={`rounded-xl border border-neutral-800 bg-neutral-900 transition-opacity ${approved ? "opacity-60" : ""}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
@@ -97,30 +97,30 @@ export default function ReviewCard({
               <StarRating rating={review.rating} />
             )}
           </div>
-          <p className="text-sm font-semibold text-zinc-900">
+          <p className="text-sm font-semibold text-white">
             {review.author_name ?? "Anonyme"}
           </p>
         </div>
-        <p className="shrink-0 text-xs text-zinc-400">
+        <p className="shrink-0 text-xs text-neutral-500">
           {formatDate(review.review_date)}
         </p>
       </div>
 
       {/* Avis */}
       {review.content && (
-        <p className="px-5 pb-4 text-sm leading-relaxed text-zinc-700">
+        <p className="px-5 pb-4 text-sm leading-relaxed text-neutral-300">
           {review.content}
         </p>
       )}
 
       {/* Réponse générée */}
       {responseText && (
-        <div className="mx-5 mb-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+        <div className="mx-5 mb-4 rounded-lg border border-neutral-800 bg-neutral-950 p-4">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
             Réponse générée
           </p>
           <textarea
-            className="w-full resize-none rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+            className="w-full resize-none rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
             rows={5}
             value={responseText}
             onChange={(e) => setResponseText(e.target.value)}
@@ -130,15 +130,15 @@ export default function ReviewCard({
 
       {/* Erreur */}
       {error && (
-        <p className="mx-5 mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+        <p className="mx-5 mb-3 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-2 text-xs text-red-300">
           {error}
         </p>
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-2 border-t border-zinc-100 px-5 py-3">
+      <div className="flex items-center justify-end gap-2 border-t border-neutral-800 px-5 py-3">
         {approved ? (
-          <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-300">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -148,7 +148,7 @@ export default function ReviewCard({
           <button
             onClick={handleApprove}
             disabled={approving}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50"
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-50"
           >
             {approving ? "Approbation…" : "Approuver"}
           </button>
@@ -156,11 +156,11 @@ export default function ReviewCard({
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg border border-neutral-800 px-4 py-2 text-sm font-medium text-neutral-300 transition hover:border-neutral-600 hover:text-white disabled:opacity-50"
           >
             {generating ? (
               <>
-                <svg className="h-4 w-4 animate-spin text-zinc-400" fill="none" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>

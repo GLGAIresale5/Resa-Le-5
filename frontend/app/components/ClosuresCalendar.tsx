@@ -41,7 +41,7 @@ const MONTHS = [
 
 // Couleur de point par service (index dans service_hours)
 const SERVICE_DOTS = ["bg-amber-400", "bg-sky-400", "bg-pink-400", "bg-purple-400"];
-const SERVICE_DOT_FALLBACK = "bg-zinc-400";
+const SERVICE_DOT_FALLBACK = "bg-neutral-400";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -264,15 +264,15 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
     <div className="mx-auto w-full max-w-md px-3 md:px-6 py-4 pb-10">
       {/* En-tête mois */}
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} aria-label="Mois précédent" className="h-9 w-9 flex items-center justify-center rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-zinc-500">‹</button>
+        <button onClick={prevMonth} aria-label="Mois précédent" className="h-9 w-9 flex items-center justify-center rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-600 hover:text-white">‹</button>
         <div className="text-sm font-semibold capitalize">{MONTHS[month]} {year}</div>
-        <button onClick={nextMonth} aria-label="Mois suivant" className="h-9 w-9 flex items-center justify-center rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-zinc-500">›</button>
+        <button onClick={nextMonth} aria-label="Mois suivant" className="h-9 w-9 flex items-center justify-center rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-600 hover:text-white">›</button>
       </div>
 
       {/* Jours de la semaine */}
       <div className="grid grid-cols-7 gap-1 mb-1">
         {WEEKDAY_HEADERS.map((w, i) => (
-          <div key={i} className="text-center text-[11px] text-zinc-500 py-1">{w}</div>
+          <div key={i} className="text-center text-[11px] text-neutral-500 py-1">{w}</div>
         ))}
       </div>
 
@@ -291,8 +291,8 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
               onClick={() => setSelectedDay(date)}
               className={`aspect-square rounded-md text-sm flex items-center justify-center relative transition-colors border ${
                 whole
-                  ? "bg-red-500/25 border-red-500/50 text-red-200"
-                  : "bg-zinc-800/60 border-zinc-700/60 text-zinc-200 hover:border-zinc-500"
+                  ? "bg-red-500/15 border-red-500/40 text-red-300"
+                  : "bg-neutral-900/60 border-neutral-800 text-white hover:border-neutral-600"
               } ${isToday ? "ring-1 ring-white/60" : ""}`}
             >
               {dayNum}
@@ -309,8 +309,8 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
       </div>
 
       {/* Légende — une couleur par service */}
-      <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-zinc-500">
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-red-500/40 border border-red-500/50" /> Journée fermée</span>
+      <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-neutral-500">
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-red-500/15 border border-red-500/40" /> Journée fermée</span>
         {services.map((s, i) => (
           <span key={s.name} className="flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-full ${SERVICE_DOTS[i] ?? SERVICE_DOT_FALLBACK}`} /> {s.name} fermé
@@ -318,23 +318,23 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
         ))}
       </div>
 
-      <p className="text-xs text-zinc-500 mt-3">
+      <p className="text-xs text-neutral-500 mt-3">
         Touche un jour pour fermer la journée ou un service. Les fermetures bloquent les réservations en ligne.
       </p>
 
       {/* ── Fermetures récurrentes ── */}
-      <div className="mt-6 border-t border-zinc-800 pt-4">
-        <h3 className="text-sm font-semibold mb-2">Fermetures récurrentes</h3>
+      <div className="mt-6 border-t border-neutral-800 pt-4">
+        <h3 className="text-sm font-semibold tracking-tight mb-2">Fermetures récurrentes</h3>
         {!rulesAvailable ? (
-          <p className="text-xs text-zinc-500">Indisponible pour le moment (mise à jour de la base requise).</p>
+          <p className="text-xs text-neutral-500">Indisponible pour le moment (mise à jour de la base requise).</p>
         ) : (
           <>
             {rules.length === 0 && (
-              <p className="text-xs text-zinc-500 mb-2">Aucune règle. Exemple : fermer tous les dimanches soir.</p>
+              <p className="text-xs text-neutral-500 mb-2">Aucune règle. Exemple : fermer tous les dimanches soir.</p>
             )}
             <div className="flex flex-col gap-1.5 mb-3">
               {rules.map((rule) => (
-                <div key={rule.id} className="flex items-center justify-between gap-2 bg-zinc-800/60 border border-zinc-700/60 rounded-lg px-3 py-2">
+                <div key={rule.id} className="flex items-center justify-between gap-2 bg-neutral-900/60 border border-neutral-800 rounded-lg px-3 py-2">
                   <span className="text-sm">
                     Tous les <span className="font-medium">{WEEKDAY_NAME[rule.weekday]}s</span>
                     {" · "}
@@ -351,7 +351,7 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
                     onClick={() => handleRemoveRule(rule)}
                     disabled={mutating}
                     aria-label="Supprimer la règle"
-                    className="shrink-0 h-8 w-8 flex items-center justify-center rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                    className="shrink-0 h-8 w-8 flex items-center justify-center rounded text-neutral-500 hover:text-red-300 hover:bg-neutral-800 transition-colors disabled:opacity-50"
                   >
                     ✕
                   </button>
@@ -364,7 +364,7 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
               <select
                 value={newWeekday}
                 onChange={(e) => setNewWeekday(Number(e.target.value))}
-                className="flex-1 h-10 bg-zinc-800 border border-zinc-700 rounded px-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+                className="flex-1 h-10 bg-neutral-900 border border-neutral-800 rounded-lg px-2 text-sm text-white focus:outline-none focus:border-neutral-500"
               >
                 {WEEKDAY_OPTIONS.map((w) => (
                   <option key={w.value} value={w.value}>{w.label}</option>
@@ -373,7 +373,7 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
               <select
                 value={newScope}
                 onChange={(e) => setNewScope(e.target.value)}
-                className="flex-1 h-10 bg-zinc-800 border border-zinc-700 rounded px-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+                className="flex-1 h-10 bg-neutral-900 border border-neutral-800 rounded-lg px-2 text-sm text-white focus:outline-none focus:border-neutral-500"
               >
                 <option value="">Journée entière</option>
                 {services.map((s) => (
@@ -383,12 +383,12 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
               <button
                 onClick={handleAddRule}
                 disabled={mutating}
-                className="shrink-0 h-10 px-4 rounded text-sm bg-white text-zinc-900 font-medium hover:bg-zinc-100 transition-colors disabled:opacity-50"
+                className="shrink-0 h-10 px-4 rounded-lg text-sm bg-white text-neutral-950 font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
               >
                 Ajouter
               </button>
             </div>
-            {recStatus && <p className="text-xs text-zinc-400 mt-2">{recStatus}</p>}
+            {recStatus && <p className="text-xs text-neutral-400 mt-2">{recStatus}</p>}
           </>
         )}
       </div>
@@ -400,19 +400,19 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
           onClick={() => setSelectedDay(null)}
         >
           <div
-            className="w-full max-w-sm max-h-[70vh] overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-2xl p-5 flex flex-col gap-3"
+            className="w-full max-w-sm max-h-[70vh] overflow-y-auto bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col gap-3"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold capitalize">
+              <h3 className="text-sm font-semibold tracking-tight capitalize">
                 {new Date(selectedDay + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
               </h3>
-              <button onClick={() => setSelectedDay(null)} aria-label="Fermer" className="h-8 w-8 flex items-center justify-center rounded text-zinc-500 hover:text-white text-sm">✕</button>
+              <button onClick={() => setSelectedDay(null)} aria-label="Fermer" className="h-8 w-8 flex items-center justify-center rounded text-neutral-500 hover:text-white text-sm">✕</button>
             </div>
 
             {/* Indication récurrence sur ce jour */}
             {selectedWeekday != null && rules.some((r) => r.weekday === selectedWeekday) && (
-              <p className="text-[11px] text-zinc-500 -mt-1">
+              <p className="text-[11px] text-neutral-500 -mt-1">
                 Une fermeture récurrente s'applique le {WEEKDAY_NAME[selectedWeekday]} — rouvrir ici ne vaut que pour cette date.
               </p>
             )}
@@ -422,8 +422,8 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
               disabled={mutating}
               className={`w-full py-2.5 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 ${
                 selectedWhole
-                  ? "bg-red-500/25 border-red-500/50 text-red-200"
-                  : "bg-zinc-800 border-zinc-700 text-zinc-200 hover:border-zinc-500"
+                  ? "bg-red-500/15 border-red-500/40 text-red-300"
+                  : "bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-600 hover:text-white"
               }`}
             >
               {selectedWhole ? "✓ Journée fermée — rouvrir" : "Fermer toute la journée"}
@@ -431,7 +431,7 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
 
             {!selectedWhole && services.length > 0 && (
               <div className="flex flex-col gap-2">
-                <span className="text-xs text-zinc-500">Ou fermer un service :</span>
+                <span className="text-xs text-neutral-500">Ou fermer un service :</span>
                 {services.map((svc, i) => {
                   const closed = selectedBlocks.some((b) => b.service != null && b.service.toLowerCase() === svc.name.toLowerCase());
                   return (
@@ -441,8 +441,8 @@ export default function ClosuresCalendar({ restaurantId, services }: Props) {
                       disabled={mutating}
                       className={`w-full py-2.5 rounded-lg text-sm border transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
                         closed
-                          ? "bg-zinc-800 border-zinc-500 text-white"
-                          : "bg-zinc-800 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                          ? "bg-neutral-900 border-neutral-500 text-white"
+                          : "bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-600 hover:text-white"
                       }`}
                     >
                       <span className={`h-2 w-2 rounded-full ${SERVICE_DOTS[i] ?? SERVICE_DOT_FALLBACK}`} />

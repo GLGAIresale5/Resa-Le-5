@@ -179,21 +179,21 @@ export default function ParametresPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 md:px-8">
-      <h1 className="text-xl font-bold text-zinc-900">Paramètres</h1>
-      <p className="mt-1 text-sm text-zinc-500">Configuration de votre espace GLG AI</p>
+      <h1 className="text-xl font-bold tracking-tight text-white">Paramètres</h1>
+      <p className="mt-1 text-sm text-neutral-400">Configuration de votre espace GLG AI</p>
 
       {/* Notifications */}
       <div className="mt-8">
-        <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Notifications</h2>
-        <div className="mt-3 rounded-xl border border-zinc-200 bg-white">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">Notifications</h2>
+        <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-base">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/15 text-base text-blue-300">
                 🔔
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-900">Notifications push</p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-sm font-medium text-white">Notifications push</p>
+                <p className="text-xs text-neutral-400">
                   {pushStatus === "active"
                     ? "Vous recevez les alertes de nouvelles réservations"
                     : pushStatus === "denied"
@@ -209,18 +209,18 @@ export default function ParametresPage() {
                 onClick={handleToggleNotifications}
                 disabled={subscribing}
                 className={`relative h-7 w-12 rounded-full transition-colors ${
-                  pushStatus === "active" ? "bg-green-500" : "bg-zinc-300"
+                  pushStatus === "active" ? "bg-emerald-500" : "bg-neutral-700"
                 } ${subscribing ? "opacity-50" : ""}`}
               >
                 <span
-                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
                     pushStatus === "active" ? "translate-x-5" : "translate-x-0.5"
                   }`}
                 />
               </button>
             )}
             {pushStatus === "denied" && (
-              <span className="text-xs text-red-500 font-medium">Bloqué</span>
+              <span className="text-xs text-red-400 font-medium">Bloqué</span>
             )}
           </div>
         </div>
@@ -228,21 +228,21 @@ export default function ParametresPage() {
 
       {/* Compte */}
       <div className="mt-8">
-        <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Compte</h2>
-        <div className="mt-3 rounded-xl border border-zinc-200 bg-white">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">Compte</h2>
+        <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-base">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-base">
                 👤
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-900">{user?.email}</p>
-                <p className="text-xs text-zinc-500">{restaurant?.name}</p>
+                <p className="text-sm font-medium text-white">{user?.email}</p>
+                <p className="text-xs text-neutral-400">{restaurant?.name}</p>
               </div>
             </div>
             <button
               onClick={async () => { await signOut(); router.push("/login"); }}
-              className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+              className="rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/25"
             >
               Déconnexion
             </button>
@@ -253,7 +253,7 @@ export default function ParametresPage() {
       {/* OAuth flash message */}
       {oauthFlash && (
         <div className={`mt-6 rounded-lg border px-4 py-3 text-sm ${
-          oauthFlash.includes("succès") ? "border-green-200 bg-green-50 text-green-700" : "border-red-200 bg-red-50 text-red-700"
+          oauthFlash.includes("succès") ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300" : "border-red-500/40 bg-red-500/15 text-red-300"
         }`}>
           {oauthFlash}
         </div>
@@ -261,17 +261,17 @@ export default function ParametresPage() {
 
       {/* Connexions */}
       <div className="mt-8">
-        <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Connexions</h2>
-        <div className="mt-3 rounded-xl border border-zinc-200 bg-white divide-y divide-zinc-100">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">Connexions</h2>
+        <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900 divide-y divide-neutral-800/60">
           {/* Google Business */}
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-base">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/15 text-base text-blue-300">
                 G
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-900">Google Business</p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-sm font-medium text-white">Google Business</p>
+                <p className="text-xs text-neutral-400">
                   {oauthStatus?.google.connected
                     ? "Connecté — les avis remontent automatiquement"
                     : "Connectez votre fiche Google pour synchroniser les avis"}
@@ -282,8 +282,8 @@ export default function ParametresPage() {
               href={`${API_URL}/oauth/google/connect?token=${session?.access_token || ""}`}
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
                 oauthStatus?.google.connected
-                  ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
-                  : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+                  : "border-blue-500/30 bg-blue-500/15 text-blue-300 hover:bg-blue-500/25"
               }`}
             >
               {oauthStatus?.google.connected ? "Reconnecter" : "Connecter"}
@@ -293,12 +293,12 @@ export default function ParametresPage() {
           {/* Meta / Instagram */}
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-50 text-base">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-500/15 text-base text-pink-300">
                 IG
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-900">Meta</p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-sm font-medium text-white">Meta</p>
+                <p className="text-xs text-neutral-400">
                   {oauthStatus?.meta.connected
                     ? "Connecté — publication automatique disponible"
                     : "Connectez Instagram pour publier depuis l'app"}
@@ -309,8 +309,8 @@ export default function ParametresPage() {
               href={`${API_URL}/oauth/meta/connect?token=${session?.access_token || ""}`}
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
                 oauthStatus?.meta.connected
-                  ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
-                  : "border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100"
+                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+                  : "border-pink-500/30 bg-pink-500/15 text-pink-300 hover:bg-pink-500/25"
               }`}
             >
               {oauthStatus?.meta.connected ? "Reconnecter" : "Connecter"}
@@ -320,12 +320,12 @@ export default function ParametresPage() {
           {/* SMS */}
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-base">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-base text-emerald-300">
                 SMS
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-900">SMS de confirmation</p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-sm font-medium text-white">SMS de confirmation</p>
+                <p className="text-xs text-neutral-400">
                   {oauthStatus?.sms.enabled
                     ? `Actif — expéditeur : ${oauthStatus.sms.sender_name || "Restaurant"}`
                     : "Désactivé"}
@@ -334,8 +334,8 @@ export default function ParametresPage() {
             </div>
             <span className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
               oauthStatus?.sms.enabled
-                ? "border-green-200 bg-green-50 text-green-700"
-                : "border-zinc-200 bg-zinc-50 text-zinc-500"
+                ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
+                : "border-neutral-800 bg-neutral-900 text-neutral-400"
             }`}>
               {oauthStatus?.sms.enabled ? "Actif" : "Inactif"}
             </span>
@@ -345,28 +345,28 @@ export default function ParametresPage() {
 
       {/* Profil éditorial */}
       <div className="mt-8">
-        <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Profil éditorial</h2>
-        <p className="mt-1 text-xs text-zinc-500">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">Profil éditorial</h2>
+        <p className="mt-1 text-xs text-neutral-400">
           Définissez le ton, les hashtags et le style de vos posts réseaux sociaux. L'IA s'en servira comme guide.
         </p>
-        <div className="mt-3 rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
           <textarea
             value={toneProfile}
             onChange={(e) => { setToneProfile(e.target.value); setToneSaved(false); }}
             rows={10}
             placeholder={"Ex :\nTon : pragmatique et décontracté. Phrases courtes, directes.\nInterdit : \"Laissez-vous tenter...\", \"Nous sommes ravis...\"\nHashtags fixes : #monrestaurant #maville\nExemple bon ton : \"Nos croquetas sont maison, croustillantes dehors, fondantes dedans.\""}
-            className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-relaxed text-zinc-800 placeholder:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+            className="w-full resize-none rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm leading-relaxed text-white placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500"
           />
           <div className="mt-3 flex items-center gap-3">
             <button
               onClick={handleSaveToneProfile}
               disabled={toneSaving}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50"
+              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-50"
             >
               {toneSaving ? "Enregistrement…" : "Enregistrer"}
             </button>
             {toneSaved && (
-              <span className="text-xs font-medium text-emerald-600">Enregistré</span>
+              <span className="text-xs font-medium text-emerald-300">Enregistré</span>
             )}
           </div>
         </div>

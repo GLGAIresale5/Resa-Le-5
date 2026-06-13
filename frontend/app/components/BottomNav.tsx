@@ -74,7 +74,7 @@ export default function BottomNav() {
     .map((item) => ({ ...item, href: `/${slug}${item.path}` }));
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden border-t border-zinc-200 bg-white" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden border-t border-neutral-800 bg-neutral-950/95 backdrop-blur" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       {navItems.map((item) => {
         const isActive = pathname.startsWith(item.href);
         return (
@@ -82,7 +82,7 @@ export default function BottomNav() {
             key={item.href}
             href={item.href}
             className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition ${
-              isActive ? "text-zinc-900" : "text-zinc-400"
+              isActive ? "text-white" : "text-neutral-500"
             }`}
           >
             {item.icon}

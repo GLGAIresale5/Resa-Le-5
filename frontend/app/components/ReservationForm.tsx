@@ -109,12 +109,12 @@ export default function ReservationForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h3 className="text-sm font-semibold text-white">
+      <h3 className="text-sm font-semibold tracking-tight text-white">
         {isEdit ? "Modifier la réservation" : "Nouvelle réservation"}
       </h3>
 
       {error && (
-        <div className="text-xs text-red-400 bg-red-950/40 border border-red-800 rounded px-3 py-2">
+        <div className="text-xs text-red-300 bg-red-500/15 border border-red-500/40 rounded-lg px-3 py-2">
           {error}
         </div>
       )}
@@ -122,9 +122,9 @@ export default function ReservationForm({
       {/* Prénom + Nom */}
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-400">Prénom *</label>
+          <label className="text-xs text-neutral-400">Prénom *</label>
           <input
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+            className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
             placeholder="Prénom"
             value={guestFirst}
             onChange={(e) => setGuestFirst(e.target.value)}
@@ -132,9 +132,9 @@ export default function ReservationForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-400">Nom</label>
+          <label className="text-xs text-neutral-400">Nom</label>
           <input
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+            className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
             placeholder="Nom de famille"
             value={guestLast}
             onChange={(e) => setGuestLast(e.target.value)}
@@ -145,22 +145,22 @@ export default function ReservationForm({
       {/* Couverts + Source */}
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-400">Couverts *</label>
+          <label className="text-xs text-neutral-400">Couverts *</label>
           <input
             type="number"
             inputMode="numeric"
             min={1}
             max={30}
             placeholder="2"
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+            className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
             value={guestCount}
             onChange={(e) => setGuestCount(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-400">Source</label>
+          <label className="text-xs text-neutral-400">Source</label>
           <select
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+            className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500"
             value={source}
             onChange={(e) => setSource(e.target.value as ReservationSource)}
           >
@@ -173,9 +173,9 @@ export default function ReservationForm({
 
       {/* Téléphone */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-zinc-400">Téléphone *</label>
+        <label className="text-xs text-neutral-400">Téléphone *</label>
         <input
-          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+          className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
           placeholder="06 00 00 00 00"
           value={guestPhone}
           onChange={(e) => setGuestPhone(e.target.value)}
@@ -184,8 +184,8 @@ export default function ReservationForm({
 
       {/* No-show warning */}
       {noShowCount >= 2 && (
-        <div className="flex items-center gap-2 rounded-lg border border-orange-700/50 bg-orange-950/60 px-3 py-2.5 text-xs text-orange-300">
-          <span className="text-orange-400 text-base">⚠</span>
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-300">
+          <span className="text-amber-300 text-base">⚠</span>
           <span>
             Ce client a <strong>{noShowCount} no-shows consécutifs</strong>.
             Vous pouvez quand même créer la réservation.
@@ -196,18 +196,18 @@ export default function ReservationForm({
       {/* Date + Heure */}
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-400">Date *</label>
+          <label className="text-xs text-neutral-400">Date *</label>
           <input
             type="date"
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+            className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-400">Heure</label>
+          <label className="text-xs text-neutral-400">Heure</label>
           <select
-            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+            className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500"
             value={time}
             onChange={(e) => setTime(e.target.value)}
           >
@@ -220,17 +220,17 @@ export default function ReservationForm({
 
       {/* Durée */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-zinc-400">Durée</label>
+        <label className="text-xs text-neutral-400">Durée</label>
         <div className="flex gap-2">
           {([[60, "1h"], [90, "1h30"], [120, "2h"], [150, "2h30"], [180, "3h"]] as const).map(([d, lbl]) => (
             <button
               key={d}
               type="button"
               onClick={() => setDuration(d)}
-              className={`flex-1 py-1.5 rounded text-xs border transition-colors ${
+              className={`flex-1 py-1.5 rounded-lg text-xs border transition-colors ${
                 duration === d
-                  ? "bg-zinc-600 border-zinc-500 text-white"
-                  : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                  ? "bg-white border-white text-neutral-950 font-medium"
+                  : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-white"
               }`}
             >
               {lbl}
@@ -241,9 +241,9 @@ export default function ReservationForm({
 
       {/* Table (optionnel, texte libre) */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-zinc-400">Table (optionnel)</label>
+        <label className="text-xs text-neutral-400">Table (optionnel)</label>
         <input
-          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+          className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500"
           placeholder="Ex : T6, Terrasse 2, Bar..."
           value={tableLabel}
           onChange={(e) => setTableLabel(e.target.value)}
@@ -252,9 +252,9 @@ export default function ReservationForm({
 
       {/* Notes */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-zinc-400">Notes</label>
+        <label className="text-xs text-neutral-400">Notes</label>
         <textarea
-          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 resize-none"
+          className="bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500 resize-none"
           placeholder="Allergie, anniversaire, demande particulière..."
           rows={2}
           value={notes}
@@ -267,7 +267,7 @@ export default function ReservationForm({
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-2 rounded text-sm border border-zinc-700 text-zinc-400 hover:border-zinc-600 transition-colors"
+          className="flex-1 py-2 rounded-lg text-sm border border-neutral-800 text-neutral-300 hover:border-neutral-600 hover:text-white transition-colors"
           disabled={loading}
         >
           Retour
@@ -275,7 +275,7 @@ export default function ReservationForm({
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 py-2 rounded text-sm bg-white text-zinc-900 font-medium hover:bg-zinc-100 transition-colors disabled:opacity-50"
+          className="flex-1 py-2 rounded-lg text-sm bg-white text-neutral-950 font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
         >
           {loading ? "Enregistrement..." : isEdit ? "Mettre à jour" : "Confirmer"}
         </button>
@@ -289,7 +289,7 @@ export default function ReservationForm({
               onCancelReservation(reservation!.id);
             }
           }}
-          className="w-full py-2 rounded text-sm border border-red-800/50 text-red-400 hover:bg-red-950/30 hover:border-red-700 transition-colors"
+          className="w-full py-2 rounded-lg text-sm border border-red-500/40 text-red-300 hover:bg-red-500/15 hover:border-red-500/60 transition-colors"
           disabled={loading}
         >
           Annuler la réservation

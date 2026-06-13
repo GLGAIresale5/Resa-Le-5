@@ -60,8 +60,8 @@ export default function AdminLayout({
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <div className="text-sm text-zinc-400">Chargement...</div>
+      <div className="flex min-h-screen items-center justify-center bg-neutral-950">
+        <div className="text-sm text-neutral-500">Chargement...</div>
       </div>
     );
   }
@@ -69,7 +69,7 @@ export default function AdminLayout({
   if (!user) return null;
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-neutral-950">
       <PushNotifications />
       <ServiceWorkerUpdater />
       <Sidebar />
