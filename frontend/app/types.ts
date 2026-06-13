@@ -251,3 +251,112 @@ export interface ReservationBlock {
   reason: string | null;
   created_at?: string;
 }
+
+// --- Factures fournisseurs (finances, rapatrié de Tablo) ---
+
+export type InvoiceStatus = "pending" | "validated" | "paid" | "disputed";
+
+export interface SupplierInvoiceLine {
+  id: string;
+  invoice_id: string;
+  stock_item_id?: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price_ht: number;
+  tva_rate: number;
+  total_ht?: number;
+  total_tva?: number;
+  total_ttc?: number;
+  created_at?: string;
+}
+
+export interface SupplierInvoice {
+  id: string;
+  restaurant_id: string;
+  supplier_name: string;
+  invoice_number?: string;
+  invoice_date: string;
+  due_date?: string;
+  delivery_id?: string;
+  total_ht: number;
+  total_tva: number;
+  total_ttc: number;
+  status: InvoiceStatus;
+  notes?: string;
+  lines: SupplierInvoiceLine[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface InvoiceStats {
+  count: number;
+  total_ht: number;
+  total_ttc: number;
+  by_supplier: Record<string, number>;
+  by_status: Record<InvoiceStatus, number>;
+}
+
+// --- Compta simplifiée ---
+
+export interface TvaBreakdown {
+  tva_rate: number;
+  total_ht: number;
+  total_tva: number;
+  total_ttc: number;
+  invoice_count: number;
+}
+
+export interface SupplierBreakdown {
+  supplier_name: string;
+  total_ht: number;
+  total_ttc: number;
+  invoice_count: number;
+}
+
+export interface MonthlyPnL {
+  month: string;
+  revenue_ht: number;
+  purchases_ht: number;
+  purchases_ttc: number;
+  gross_margin_ht: number;
+  margin_pct: number;
+  fixed_charges: number;
+  net_result: number;
+  tva_breakdown: TvaBreakdown[];
+  supplier_breakdown: SupplierBreakdown[];
+}
+
+export type ChargeCategory = "salaires" | "loyer" | "assurance" | "energie" | "divers";
+
+export interface ChargeFixe {
+  id: string;
+  restaurant_id: string;
+  label: string;
+  amount: number;
+  category: ChargeCategory;
+  notes?: string;
+  created_at?: string;
+}
+
+// --- Dashboard finances ---
+
+export interface DashboardSummary {
+  month: string;
+  revenue_ht: number;
+  revenue_ttc: number | null;
+  gross_margin_ht: number;
+  margin_pct: number;
+  net_result: number;
+  purchases_ht: number;
+  purchases_ttc: number;
+  invoice_count: number;
+  pending_invoices: number;
+  stock_count: number;
+  stock_alerts_critical: number;
+  stock_alerts_warning: number;
+  fixed_charges: number;
+  weekly_purchases: { label: string; value: number }[];
+  top_suppliers: { name: string; total_ht: number }[];
+  revenue_sources: string[];
+}

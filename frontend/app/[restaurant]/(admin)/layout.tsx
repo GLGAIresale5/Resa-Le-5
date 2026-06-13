@@ -10,11 +10,14 @@ import ServiceWorkerUpdater from "../../components/ServiceWorkerUpdater";
 
 // Map route segments to module names
 const ROUTE_TO_MODULE: Record<string, string> = {
+  dashboard: "dashboard",
   reservations: "reservations",
   avis: "avis",
   reseaux: "reseaux",
   stocks: "stocks",
   "stocks-cuisine": "stocks-cuisine",
+  factures: "factures",
+  compta: "compta",
   parametres: "parametres", // always allowed
 };
 

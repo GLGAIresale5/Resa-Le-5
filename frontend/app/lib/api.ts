@@ -16,6 +16,11 @@ import {
   ZReportScanResult,
   PublishResult,
   PublishAlert,
+  SupplierInvoice,
+  InvoiceStats,
+  MonthlyPnL,
+  ChargeFixe,
+  DashboardSummary,
 } from "../types";
 import { createClient } from "./supabase";
 
@@ -598,4 +603,136 @@ export async function createBlock(restaurantId: string, date: string, service?: 
 export async function deleteBlock(blockId: string): Promise<void> {
   const res = await authFetch(`${API_URL}/reservations/blocks/${blockId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Erreur suppression blocage");
+}
+
+// --- Factures fournisseurs (finances) ---
+
+export async function fetchInvoices(
+  restaurantId: string,
+  options?: { status?: string; supplier?: string; dateFrom?: string; dateTo?: string }
+): Promise<SupplierInvoice[]> {
+  let url = `${API_URL}/factures/?restaurant_id=${restaurantId}`;
+  if (options?.status) url += `&status=${options.status}`;
+  if (options?.supplier) url += `&supplier=${encodeURIComponent(options.supplier)}`;
+  if (options?.dateFrom) url += `&date_from=${options.dateFrom}`;
+  if (options?.dateTo) url += `&date_to=${options.dateTo}`;
+  const res = await authFetch(url);
+  if (!res.ok) throw new Error("Erreur chargement factures");
+  return res.json();
+}
+
+export async function createInvoice(data: {
+  restaurant_id: string;
+  supplier_name: string;
+  invoice_number?: string;
+  invoice_date: string;
+  due_date?: string;
+  delivery_id?: string;
+  notes?: string;
+  lines: {
+    description: string;
+    quantity: number;
+    unit?: string;
+    unit_price_ht: number;
+    tva_rate?: number;
+    stock_item_id?: string;
+  }[];
+}): Promise<SupplierInvoice> {
+  const res = await authFetch(`${API_URL}/factures/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Erreur création facture");
+  return res.json();
+}
+
+export async function updateInvoiceStatus(
+  invoiceId: string,
+  restaurantId: string,
+  status: string
+): Promise<void> {
+  const res = await authFetch(
+    `${API_URL}/factures/${invoiceId}/status?restaurant_id=${restaurantId}&status=${status}`,
+    { method: "PATCH" }
+  );
+  if (!res.ok) throw new Error("Erreur changement statut");
+}
+
+export async function deleteInvoice(invoiceId: string, restaurantId: string): Promise<void> {
+  const res = await authFetch(
+    `${API_URL}/factures/${invoiceId}?restaurant_id=${restaurantId}`,
+    { method: "DELETE" }
+  );
+  if (!res.ok) throw new Error("Erreur suppression facture");
+}
+
+export async function fetchInvoiceStats(
+  restaurantId: string,
+  month?: string
+): Promise<InvoiceStats> {
+  let url = `${API_URL}/factures/stats/summary?restaurant_id=${restaurantId}`;
+  if (month) url += `&month=${month}`;
+  const res = await authFetch(url);
+  if (!res.ok) throw new Error("Erreur chargement stats factures");
+  return res.json();
+}
+
+// --- Compta simplifiée (finances) ---
+
+export async function fetchMonthlyPnL(
+  restaurantId: string,
+  month: string,
+  revenueHt?: number
+): Promise<MonthlyPnL> {
+  const params = new URLSearchParams({ restaurant_id: restaurantId, month });
+  if (revenueHt !== undefined && revenueHt > 0) {
+    params.set("revenue_ht", String(revenueHt));
+  }
+  const res = await authFetch(`${API_URL}/compta/monthly?${params}`);
+  if (!res.ok) throw new Error("Erreur chargement P&L");
+  return res.json();
+}
+
+export async function fetchCharges(restaurantId: string): Promise<ChargeFixe[]> {
+  const res = await authFetch(`${API_URL}/compta/charges?restaurant_id=${restaurantId}`);
+  if (!res.ok) throw new Error("Erreur chargement charges");
+  return res.json();
+}
+
+export async function createCharge(data: {
+  restaurant_id: string;
+  label: string;
+  amount: number;
+  category?: string;
+  notes?: string;
+}): Promise<ChargeFixe> {
+  const res = await authFetch(`${API_URL}/compta/charges`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Erreur création charge");
+  return res.json();
+}
+
+export async function deleteCharge(chargeId: string, restaurantId: string): Promise<void> {
+  const res = await authFetch(
+    `${API_URL}/compta/charges/${chargeId}?restaurant_id=${restaurantId}`,
+    { method: "DELETE" }
+  );
+  if (!res.ok) throw new Error("Erreur suppression charge");
+}
+
+// --- Dashboard finances ---
+
+export async function fetchDashboardSummary(
+  restaurantId: string,
+  month?: string
+): Promise<DashboardSummary> {
+  let url = `${API_URL}/dashboard/summary?restaurant_id=${restaurantId}`;
+  if (month) url += `&month=${month}`;
+  const res = await authFetch(url);
+  if (!res.ok) throw new Error("Erreur chargement dashboard");
+  return res.json();
 }
