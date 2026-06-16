@@ -6,7 +6,7 @@ from datetime import date
 from core.config import settings
 from core.auth import get_current_user, verify_restaurant_owner
 from models.compta import (
-    MonthlyPnL, TvaBreakdown, SupplierBreakdown,
+    MonthlyPnL, TvaBreakdown, SupplierBreakdown, CategoryBreakdown,
     ChargeFixe, ChargeFixeCreate,
 )
 from models.revenue import aggregate_revenue_for_range
@@ -14,6 +14,14 @@ from supabase import create_client
 from calendar import monthrange
 
 router = APIRouter(prefix="/compta", tags=["compta"])
+
+# Postes de dépense. Seules les "matières" entrent dans la marge brute.
+CATEGORY_LABELS = {
+    "matieres": "Matières premières",
+    "exploitation": "Charges d'exploitation",
+    "equipement": "Équipement / matériel",
+    "hors_resto": "Hors restaurant",
+}
 
 
 def get_supabase():
@@ -67,6 +75,7 @@ async def monthly_pnl(
     # TVA breakdown
     tva_map: dict[float, dict] = {}
     supplier_map: dict[str, dict] = {}
+    cat_map: dict[str, dict] = {}
 
     total_purchases_ht = 0.0
     total_purchases_ttc = 0.0
@@ -75,6 +84,7 @@ async def monthly_pnl(
         s_name = inv["supplier_name"]
         inv_ht = float(inv.get("total_ht") or 0)
         inv_ttc = float(inv.get("total_ttc") or 0)
+        cat = inv.get("category") or "matieres"
         total_purchases_ht += inv_ht
         total_purchases_ttc += inv_ttc
 
@@ -84,6 +94,13 @@ async def monthly_pnl(
         supplier_map[s_name]["total_ht"] += inv_ht
         supplier_map[s_name]["total_ttc"] += inv_ttc
         supplier_map[s_name]["invoice_count"] += 1
+
+        # Category breakdown
+        if cat not in cat_map:
+            cat_map[cat] = {"category": cat, "label": CATEGORY_LABELS.get(cat, cat), "total_ht": 0, "total_ttc": 0, "invoice_count": 0}
+        cat_map[cat]["total_ht"] += inv_ht
+        cat_map[cat]["total_ttc"] += inv_ttc
+        cat_map[cat]["invoice_count"] += 1
 
         # TVA from lines
         for line in inv.get("supplier_invoice_lines", []):
@@ -109,22 +126,36 @@ async def monthly_pnl(
     )
     fixed_total = sum(float(c.get("amount", 0)) for c in charges)
 
-    # P&L
-    gross_margin = revenue_ht - total_purchases_ht
+    # Ventilation par poste (HT)
+    matieres = cat_map.get("matieres", {}).get("total_ht", 0.0)
+    exploitation = cat_map.get("exploitation", {}).get("total_ht", 0.0)
+    equipement = cat_map.get("equipement", {}).get("total_ht", 0.0)
+    hors_resto = cat_map.get("hors_resto", {}).get("total_ht", 0.0)
+
+    # P&L : marge brute = CA − matières ; résultat net = marge − charges d'exploitation − charges fixes.
+    # Équipement (investissement) et hors-resto (perso/véhicule) sont exclus du résultat d'exploitation.
+    gross_margin = revenue_ht - matieres
     margin_pct = (gross_margin / revenue_ht * 100) if revenue_ht > 0 else 0
-    net_result = gross_margin - fixed_total
+    net_result = gross_margin - exploitation - fixed_total
+
+    cat_order = {"matieres": 0, "exploitation": 1, "equipement": 2, "hors_resto": 3}
 
     return MonthlyPnL(
         month=month,
         revenue_ht=round(revenue_ht, 2),
         purchases_ht=round(total_purchases_ht, 2),
         purchases_ttc=round(total_purchases_ttc, 2),
+        purchases_matieres=round(matieres, 2),
+        charges_exploitation=round(exploitation, 2),
+        purchases_equipement=round(equipement, 2),
+        purchases_hors_resto=round(hors_resto, 2),
         gross_margin_ht=round(gross_margin, 2),
         margin_pct=round(margin_pct, 1),
         fixed_charges=round(fixed_total, 2),
         net_result=round(net_result, 2),
         tva_breakdown=[TvaBreakdown(**{k: round(v, 2) if isinstance(v, float) else v for k, v in t.items()}) for t in sorted(tva_map.values(), key=lambda x: x["tva_rate"])],
         supplier_breakdown=[SupplierBreakdown(**{k: round(v, 2) if isinstance(v, float) else v for k, v in s.items()}) for s in sorted(supplier_map.values(), key=lambda x: x["total_ht"], reverse=True)],
+        category_breakdown=[CategoryBreakdown(**{k: round(v, 2) if isinstance(v, float) else v for k, v in c.items()}) for c in sorted(cat_map.values(), key=lambda x: cat_order.get(x["category"], 99))],
     )
 
 

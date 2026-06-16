@@ -118,6 +118,7 @@ async def create_invoice(
         "total_ht": total_ht,
         "total_tva": total_tva,
         "total_ttc": total_ttc,
+        "category": body.category,
         "notes": body.notes,
     }
     inv = supabase.table("supplier_invoices").insert(inv_data).execute().data[0]

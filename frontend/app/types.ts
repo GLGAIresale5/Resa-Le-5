@@ -256,6 +256,8 @@ export interface ReservationBlock {
 
 export type InvoiceStatus = "pending" | "validated" | "paid" | "disputed";
 
+export type InvoiceCategory = "matieres" | "exploitation" | "equipement" | "hors_resto";
+
 export interface SupplierInvoiceLine {
   id: string;
   invoice_id: string;
@@ -283,6 +285,7 @@ export interface SupplierInvoice {
   total_tva: number;
   total_ttc: number;
   status: InvoiceStatus;
+  category: InvoiceCategory;
   notes?: string;
   lines: SupplierInvoiceLine[];
   created_at?: string;
@@ -314,17 +317,30 @@ export interface SupplierBreakdown {
   invoice_count: number;
 }
 
+export interface CategoryBreakdown {
+  category: InvoiceCategory;
+  label: string;
+  total_ht: number;
+  total_ttc: number;
+  invoice_count: number;
+}
+
 export interface MonthlyPnL {
   month: string;
   revenue_ht: number;
   purchases_ht: number;
   purchases_ttc: number;
+  purchases_matieres: number;
+  charges_exploitation: number;
+  purchases_equipement: number;
+  purchases_hors_resto: number;
   gross_margin_ht: number;
   margin_pct: number;
   fixed_charges: number;
   net_result: number;
   tva_breakdown: TvaBreakdown[];
   supplier_breakdown: SupplierBreakdown[];
+  category_breakdown: CategoryBreakdown[];
 }
 
 export type ChargeCategory = "salaires" | "loyer" | "assurance" | "energie" | "divers";

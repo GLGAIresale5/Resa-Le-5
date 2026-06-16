@@ -628,6 +628,7 @@ export async function createInvoice(data: {
   invoice_date: string;
   due_date?: string;
   delivery_id?: string;
+  category?: string;
   notes?: string;
   lines: {
     description: string;

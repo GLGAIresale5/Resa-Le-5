@@ -50,7 +50,7 @@ async def dashboard_summary(
     # --- Invoices this month ---
     invoices = (
         supabase.table("supplier_invoices")
-        .select("total_ht, total_ttc, status, invoice_date, supplier_name")
+        .select("total_ht, total_ttc, status, invoice_date, supplier_name, category")
         .eq("restaurant_id", rid)
         .gte("invoice_date", month_start.isoformat())
         .lte("invoice_date", month_end.isoformat())
@@ -115,9 +115,12 @@ async def dashboard_summary(
         reverse=True,
     )[:5]
 
-    gross_margin = revenue_ht - purchases_ht
+    # Marge brute = CA − matières uniquement ; résultat net déduit aussi les charges d'exploitation.
+    matieres_ht = sum(float(inv.get("total_ht") or 0) for inv in invoices if (inv.get("category") or "matieres") == "matieres")
+    exploitation_ht = sum(float(inv.get("total_ht") or 0) for inv in invoices if inv.get("category") == "exploitation")
+    gross_margin = revenue_ht - matieres_ht
     margin_pct = (gross_margin / revenue_ht * 100) if revenue_ht > 0 else 0
-    net_result = gross_margin - fixed_charges
+    net_result = gross_margin - exploitation_ht - fixed_charges
 
     return {
         "month": month,
@@ -127,6 +130,7 @@ async def dashboard_summary(
         "margin_pct": round(margin_pct, 1),
         "net_result": round(net_result, 2),
         "purchases_ht": round(purchases_ht, 2),
+        "purchases_matieres": round(matieres_ht, 2),
         "purchases_ttc": round(purchases_ttc, 2),
         "invoice_count": invoice_count,
         "pending_invoices": pending_count,

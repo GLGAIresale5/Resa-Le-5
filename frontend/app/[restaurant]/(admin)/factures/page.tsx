@@ -9,7 +9,28 @@ import {
   deleteInvoice,
   fetchInvoiceStats,
 } from "../../../lib/api";
-import { SupplierInvoice, InvoiceStatus, InvoiceStats } from "../../../types";
+import { SupplierInvoice, InvoiceStatus, InvoiceStats, InvoiceCategory } from "../../../types";
+
+const CATEGORIES: { value: InvoiceCategory; label: string }[] = [
+  { value: "matieres", label: "Matières premières" },
+  { value: "exploitation", label: "Charges d'exploitation" },
+  { value: "equipement", label: "Équipement / matériel" },
+  { value: "hors_resto", label: "Hors restaurant" },
+];
+
+const CATEGORY_LABELS: Record<InvoiceCategory, string> = {
+  matieres: "Matières",
+  exploitation: "Exploitation",
+  equipement: "Équipement",
+  hors_resto: "Hors resto",
+};
+
+const CATEGORY_COLORS: Record<InvoiceCategory, string> = {
+  matieres: "bg-emerald-500/15 text-emerald-300",
+  exploitation: "bg-sky-500/15 text-sky-300",
+  equipement: "bg-violet-500/15 text-violet-300",
+  hors_resto: "bg-neutral-500/20 text-neutral-300",
+};
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
   pending: "En attente",
@@ -65,6 +86,7 @@ export default function FacturesPage() {
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState("");
+  const [category, setCategory] = useState<InvoiceCategory>("matieres");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<LineForm[]>([emptyLine()]);
   const [submitting, setSubmitting] = useState(false);
@@ -136,6 +158,7 @@ export default function FacturesPage() {
         invoice_number: invoiceNumber || undefined,
         invoice_date: invoiceDate,
         due_date: dueDate || undefined,
+        category,
         notes: notes || undefined,
         lines: lines.map((l) => ({
           description: l.description,
@@ -150,6 +173,7 @@ export default function FacturesPage() {
       setInvoiceNumber("");
       setInvoiceDate(new Date().toISOString().slice(0, 10));
       setDueDate("");
+      setCategory("matieres");
       setNotes("");
       setLines([emptyLine()]);
       setTab("liste");
@@ -266,6 +290,15 @@ export default function FacturesPage() {
                       <div className="font-semibold text-white">{fmt(inv.total_ttc)}</div>
                       <div className="text-[10px] text-neutral-400">HT {fmt(inv.total_ht)}</div>
                     </div>
+                    {inv.category && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium hidden sm:inline ${
+                          CATEGORY_COLORS[inv.category]
+                        }`}
+                      >
+                        {CATEGORY_LABELS[inv.category]}
+                      </span>
+                    )}
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
                         STATUS_COLORS[inv.status]
@@ -424,6 +457,23 @@ export default function FacturesPage() {
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500"
               />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs text-neutral-400 mb-1">Catégorie de dépense</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as InvoiceCategory)}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-[10px] text-neutral-500">
+                Seules les « Matières premières » entrent dans la marge brute.
+              </p>
             </div>
           </div>
 

@@ -173,9 +173,12 @@ export default function ComptaPage() {
                   </div>
                 </div>
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-3">
-                  <div className="text-xs text-neutral-400">Achats HT</div>
+                  <div className="text-xs text-neutral-400">Matières</div>
                   <div className="text-xl font-semibold text-red-300 mt-1">
-                    {fmt(pnl.purchases_ht)}
+                    {fmt(pnl.purchases_matieres ?? 0)}
+                  </div>
+                  <div className="text-[10px] text-neutral-500 mt-0.5">
+                    Achats totaux: {fmt(pnl.purchases_ht)}
                   </div>
                 </div>
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-3">
@@ -184,7 +187,7 @@ export default function ComptaPage() {
                     {fmt(pnl.gross_margin_ht)}
                   </div>
                   <div className={`text-xs mt-0.5 ${pctColor(pnl.margin_pct)}`}>
-                    {pnl.margin_pct.toFixed(1)}%
+                    {pnl.margin_pct.toFixed(1)}% · CA − matières
                   </div>
                 </div>
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-3">
@@ -193,10 +196,41 @@ export default function ComptaPage() {
                     {fmt(pnl.net_result)}
                   </div>
                   <div className="text-[10px] text-neutral-400 mt-0.5">
-                    Charges fixes: {fmt(pnl.fixed_charges)}
+                    Expl. {fmt(pnl.charges_exploitation ?? 0)} · Fixes {fmt(pnl.fixed_charges)}
                   </div>
                 </div>
               </div>
+
+              {/* Dépenses par poste */}
+              {(pnl.category_breakdown ?? []).length > 0 && (
+                <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                  <h3 className="text-sm font-medium tracking-tight text-white mb-3">
+                    Dépenses par poste (HT)
+                  </h3>
+                  <div className="flex flex-col gap-1.5">
+                    {(pnl.category_breakdown ?? []).map((c) => {
+                      const pct = pnl.purchases_ht > 0 ? (c.total_ht / pnl.purchases_ht) * 100 : 0;
+                      return (
+                        <div key={c.category} className="flex items-center gap-3">
+                          <span className="text-xs text-white w-32 truncate">{c.label}</span>
+                          <div className="flex-1 h-2 rounded-full bg-neutral-950/60 overflow-hidden">
+                            <div className="h-full rounded-full bg-white/80" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs text-neutral-400 w-20 text-right">{fmt(c.total_ht)}</span>
+                          <span className="text-[10px] text-neutral-500 w-12 text-right">{c.invoice_count} f.</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between border-t border-neutral-800 pt-2">
+                    <span className="text-xs font-medium text-white">Total achats HT</span>
+                    <span className="text-sm font-semibold text-white">{fmt(pnl.purchases_ht)}</span>
+                  </div>
+                  <p className="mt-2 text-[10px] text-neutral-500">
+                    Marge brute = CA − matières. Équipement et hors-restaurant sont exclus du résultat d&apos;exploitation.
+                  </p>
+                </div>
+              )}
 
               {/* Supplier breakdown */}
               {pnl.supplier_breakdown.length > 0 && (

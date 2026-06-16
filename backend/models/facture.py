@@ -35,6 +35,7 @@ class SupplierInvoice(BaseModel):
     total_tva: float = 0
     total_ttc: float = 0
     status: str = "pending"  # 'pending' | 'validated' | 'paid' | 'disputed'
+    category: str = "matieres"  # 'matieres' | 'exploitation' | 'equipement' | 'hors_resto'
     notes: Optional[str] = None
     lines: List[SupplierInvoiceLine] = []
     created_at: Optional[datetime] = None
@@ -57,6 +58,7 @@ class SupplierInvoiceCreate(BaseModel):
     invoice_date: date
     due_date: Optional[date] = None
     delivery_id: Optional[UUID] = None
+    category: str = "matieres"
     notes: Optional[str] = None
     lines: List[InvoiceLineCreate] = []
 
@@ -68,6 +70,7 @@ class SupplierInvoiceUpdate(BaseModel):
     due_date: Optional[date] = None
     delivery_id: Optional[UUID] = None
     status: Optional[str] = None
+    category: Optional[str] = None
     notes: Optional[str] = None
 
 

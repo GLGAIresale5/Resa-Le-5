@@ -19,17 +19,31 @@ class SupplierBreakdown(BaseModel):
     invoice_count: int
 
 
+class CategoryBreakdown(BaseModel):
+    category: str  # 'matieres' | 'exploitation' | 'equipement' | 'hors_resto'
+    label: str
+    total_ht: float
+    total_ttc: float
+    invoice_count: int
+
+
 class MonthlyPnL(BaseModel):
     month: str  # "2026-04"
-    revenue_ht: float  # CA HT (from daily_sales or manual input)
-    purchases_ht: float  # Achats HT (from supplier_invoices)
+    revenue_ht: float  # CA HT (from revenue_entries or manual input)
+    purchases_ht: float  # Achats HT TOTAUX (toutes catégories)
     purchases_ttc: float
-    gross_margin_ht: float  # CA - Achats
-    margin_pct: float  # margin / CA * 100
-    fixed_charges: float  # charges fixes connues
-    net_result: float  # marge - charges fixes
+    # Ventilation par poste de dépense (HT)
+    purchases_matieres: float = 0      # matières premières (entrent dans la marge brute)
+    charges_exploitation: float = 0    # charges courantes (énergie, télécom, logiciels...)
+    purchases_equipement: float = 0    # équipement / investissement
+    purchases_hors_resto: float = 0    # dépenses hors-restaurant (perso, véhicule...)
+    gross_margin_ht: float  # CA - matières
+    margin_pct: float  # marge / CA * 100
+    fixed_charges: float  # charges fixes connues (salaires, loyer...)
+    net_result: float  # marge - charges d'exploitation - charges fixes
     tva_breakdown: List[TvaBreakdown]
     supplier_breakdown: List[SupplierBreakdown]
+    category_breakdown: List[CategoryBreakdown] = []
 
 
 class ChargeFixe(BaseModel):
