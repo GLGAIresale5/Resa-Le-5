@@ -90,3 +90,20 @@ class InvoiceScanResult(BaseModel):
     total_tva: Optional[float] = None
     total_ttc: Optional[float] = None
     raw_text: str
+
+
+class InvoiceIngestResult(BaseModel):
+    """Résultat de l'ingestion automatique d'un fichier (n8n → /factures/ingest)."""
+    status: str  # 'created' | 'duplicate' | 'emitted_sale' | 'needs_review' | 'unreadable'
+    doc_type: Optional[str] = None  # 'supplier_charge' | 'emitted_sale' | 'unknown'
+    message: str = ""
+    invoice_id: Optional[UUID] = None
+    supplier_name: Optional[str] = None
+    invoice_number: Optional[str] = None
+    invoice_date: Optional[str] = None
+    category: Optional[str] = None
+    total_ttc: Optional[float] = None
+    confidence: Optional[str] = None
+    # Consigne de classement Mac (n8n exécute le déplacement) — chemin RELATIF à la racine compta.
+    filing_path: Optional[str] = None       # ex. "Z Comptabilité 2026/6.FACTURE JUIN 2026"
+    filing_filename: Optional[str] = None   # ex. "2026-06-18 – Facture EDF Gaz 10254498791.pdf"

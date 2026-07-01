@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     supabase_anon_key: str
     supabase_service_key: str
     environment: str = "development"
+    # Clé d'ingestion machine-à-machine (n8n → /factures/ingest). Vide = endpoint désactivé.
+    ingest_api_key: str = ""
     # Email alertes stocks & notifications (Resend API — legacy)
     resend_api_key: str = ""
     notification_email: str = "contact@glghospitality.com"

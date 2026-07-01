@@ -1,21 +1,63 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+import re
+import base64
+from fastapi import APIRouter, HTTPException, Query, Depends, Header, File, UploadFile, Form
 from typing import List, Optional
 from uuid import UUID
-from datetime import date
+from datetime import date, timedelta
 
 from core.config import settings
 from core.auth import get_current_user, verify_restaurant_owner
 from models.facture import (
     SupplierInvoice, SupplierInvoiceCreate, SupplierInvoiceUpdate,
-    InvoiceScanRequest, InvoiceScanResult,
+    InvoiceScanRequest, InvoiceScanResult, InvoiceIngestResult,
 )
+from agents.invoice_agent import parse_invoice, render_pdf_to_images
 from supabase import create_client
 
 router = APIRouter(prefix="/factures", tags=["factures"])
 
+MONTHS_FR = ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+             "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"]
+
 
 def get_supabase():
     return create_client(settings.supabase_url, settings.supabase_service_key)
+
+
+def _norm(s: Optional[str]) -> str:
+    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+
+def _filing_target(supplier: str, date_iso: str, number: Optional[str], short_label: Optional[str]):
+    """Chemin RELATIF (dossier + nom de fichier) où n8n doit classer la facture sur le Mac."""
+    d = date.fromisoformat(date_iso)
+    folder = f"Z Comptabilité {d.year}/{d.month}.FACTURE {MONTHS_FR[d.month - 1]} {d.year}"
+    ident = (number or short_label or "").strip()
+    raw = f"{date_iso} – Facture {supplier} {ident}".strip()
+    fname = re.sub(r"\s+", " ", re.sub(r'[/\\:*?"<>|]', "-", raw)).strip() + ".pdf"
+    return folder, fname
+
+
+def _find_duplicate(supabase, rid: str, supplier: str, date_iso: str, number: Optional[str], ttc: float):
+    """Dédoublonnage serveur : même n° de doc, sinon même fournisseur + date ±2j + TTC ±2€."""
+    d = date.fromisoformat(date_iso)
+    lo = (d - timedelta(days=7)).isoformat()
+    hi = (d + timedelta(days=7)).isoformat()
+    rows = (
+        supabase.table("supplier_invoices")
+        .select("id, supplier_name, invoice_number, invoice_date, total_ttc")
+        .eq("restaurant_id", rid).gte("invoice_date", lo).lte("invoice_date", hi)
+        .execute().data
+    )
+    nnum, nsup = _norm(number), _norm(supplier)
+    for p in rows:
+        if nnum and _norm(p.get("invoice_number")) == nnum:
+            return p
+        if nsup and _norm(p.get("supplier_name"))[:5] == nsup[:5] \
+                and abs(float(p.get("total_ttc") or 0) - ttc) <= 2.0 \
+                and abs((date.fromisoformat(p["invoice_date"]) - d).days) <= 2:
+            return p
+    return None
 
 
 def compute_totals(lines: list) -> tuple[float, float, float]:
@@ -140,6 +182,98 @@ async def create_invoice(
 
     inv["lines"] = created_lines
     return inv
+
+
+# =====================
+# INGEST AUTO (n8n : Inbox → app) — clé machine, pas de login
+# =====================
+
+@router.post("/ingest", response_model=InvoiceIngestResult)
+async def ingest_invoice(
+    restaurant_id: UUID = Form(...),
+    file: UploadFile = File(...),
+    x_ingest_key: Optional[str] = Header(None, alias="X-Ingest-Key"),
+):
+    """Ingestion automatique d'un fichier facture déposé dans l'Inbox (appelé par n8n).
+
+    OCR Vision → détection charge vs facture émise → dédup serveur → catégorie auto →
+    insertion en statut 'pending' (à valider). Renvoie la consigne de classement Mac.
+    N'INSÈRE jamais un doublon ni une facture émise.
+    """
+    if not settings.ingest_api_key or x_ingest_key != settings.ingest_api_key:
+        raise HTTPException(401, "Clé d'ingestion invalide")
+
+    raw = await file.read()
+    fname = file.filename or ""
+    is_pdf = fname.lower().endswith(".pdf") or raw[:4] == b"%PDF"
+    try:
+        images = render_pdf_to_images(raw) if is_pdf else [base64.b64encode(raw).decode()]
+    except Exception as e:
+        return InvoiceIngestResult(status="unreadable", message=f"Fichier illisible : {e}")
+    if not images:
+        return InvoiceIngestResult(status="unreadable", message="Document vide")
+
+    try:
+        p = parse_invoice(images, filename_hint=fname)
+    except Exception as e:
+        return InvoiceIngestResult(status="needs_review", message=f"Échec OCR : {e}")
+
+    doc_type = p.get("doc_type")
+    supplier = (p.get("supplier_name") or "").strip()
+    date_iso = p.get("invoice_date")
+    number = p.get("invoice_number")
+    conf = p.get("confidence")
+
+    if doc_type == "emitted_sale":
+        return InvoiceIngestResult(
+            status="emitted_sale", doc_type=doc_type, supplier_name=supplier, confidence=conf,
+            message="Facture ÉMISE (vente Le 5) — non comptabilisée en charge. À classer en Factures Émises.")
+    if doc_type != "supplier_charge" or not date_iso or not supplier:
+        return InvoiceIngestResult(
+            status="needs_review", doc_type=doc_type, supplier_name=supplier, confidence=conf,
+            message=f"Non reconnu comme facture d'achat exploitable ({p.get('notes') or 'données insuffisantes'}).")
+
+    supabase = get_supabase()
+    ttc = round(float(p.get("total_ttc") or 0), 2)
+    folder, filing_name = _filing_target(supplier, date_iso, number, p.get("short_label"))
+
+    dup = _find_duplicate(supabase, str(restaurant_id), supplier, date_iso, number, ttc)
+    if dup:
+        return InvoiceIngestResult(
+            status="duplicate", doc_type=doc_type, supplier_name=supplier, invoice_number=number,
+            invoice_date=date_iso, total_ttc=ttc, confidence=conf, filing_path=folder, filing_filename=filing_name,
+            message=f"Doublon de {dup['supplier_name']} du {dup['invoice_date']} ({dup['total_ttc']} €). Non réinséré.")
+
+    # Ventilation TVA → lignes ; totaux recalculés, TTC imprimé prioritaire
+    lines = p.get("tva_lines") or [{"base_ht": p.get("total_ht") or ttc, "tva_rate": 20, "label": supplier}]
+    ht = round(sum(float(l["base_ht"]) for l in lines), 2)
+    tva = round(sum(float(l["base_ht"]) * float(l["tva_rate"]) / 100 for l in lines), 2)
+    ttc_final = ttc if ttc else round(ht + tva, 2)
+    note = f"[ingest auto n8n | conf {conf} | paiement {p.get('payment_status')}]"
+    if p.get("notes"):
+        note += f" {p['notes']}"
+    if abs(round(ht + tva, 2) - ttc_final) > 0.05:
+        note += f" [écart arrondi : calc {round(ht + tva, 2)} vs imprimé {ttc_final}]"
+
+    inv = supabase.table("supplier_invoices").insert({
+        "restaurant_id": str(restaurant_id), "supplier_name": supplier,
+        "invoice_number": number, "invoice_date": date_iso,
+        "total_ht": ht, "total_tva": tva, "total_ttc": ttc_final,
+        "status": "pending", "category": p.get("category", "matieres"), "notes": note,
+    }).execute().data[0]
+    for l in lines:
+        supabase.table("supplier_invoice_lines").insert({
+            "invoice_id": inv["id"], "description": (l.get("label") or supplier)[:120],
+            "quantity": 1, "unit": "unite",
+            "unit_price_ht": round(float(l["base_ht"]), 2), "tva_rate": float(l["tva_rate"]),
+        }).execute()
+
+    status = "created_low_confidence" if conf == "low" else "created"
+    return InvoiceIngestResult(
+        status=status, doc_type=doc_type, invoice_id=inv["id"], supplier_name=supplier,
+        invoice_number=number, invoice_date=date_iso, category=p.get("category"),
+        total_ttc=ttc_final, confidence=conf, filing_path=folder, filing_filename=filing_name,
+        message="Insérée en statut à valider." + (" Confiance faible → à revérifier." if conf == "low" else ""))
 
 
 # =====================
