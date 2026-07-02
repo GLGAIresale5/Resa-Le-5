@@ -200,7 +200,10 @@ async def ingest_invoice(
     insertion en statut 'pending' (à valider). Renvoie la consigne de classement Mac.
     N'INSÈRE jamais un doublon ni une facture émise.
     """
-    if not settings.ingest_api_key or x_ingest_key != settings.ingest_api_key:
+    # Comparaison tolérante aux espaces/retours-ligne parasites (copier-coller UI, etc.)
+    server_key = (settings.ingest_api_key or "").strip()
+    provided_key = (x_ingest_key or "").strip()
+    if not server_key or provided_key != server_key:
         raise HTTPException(401, "Clé d'ingestion invalide")
 
     raw = await file.read()
