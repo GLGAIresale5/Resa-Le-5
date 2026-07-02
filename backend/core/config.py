@@ -43,3 +43,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Nettoyage défensif : un espace/retour-ligne parasite au collage (UI Render, etc.)
+# rend une clé « invalide ». On strip les secrets sensibles au chargement.
+settings.anthropic_api_key = (settings.anthropic_api_key or "").strip()
+settings.ingest_api_key = (settings.ingest_api_key or "").strip()
