@@ -107,25 +107,24 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, format EXACT :
   "notes": "..."
 }}"""})
 
-    # Prefill "{" pour forcer une sortie JSON immédiate (évite prose / réponse vide),
-    # + retry : les modèles vision renvoient parfois un texte vide de façon transitoire.
+    # Retry x3 : les modèles vision renvoient parfois un texte vide de façon transitoire
+    # (→ json.loads casse). On réessaie plutôt que d'envoyer la facture en "à revoir".
     last_err = None
     for _attempt in range(3):
         try:
             message = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=2000,
-                messages=[
-                    {"role": "user", "content": content},
-                    {"role": "assistant", "content": "{"},
-                ],
+                messages=[{"role": "user", "content": content}],
             )
             text = ""
             for block in (message.content or []):
                 if getattr(block, "type", None) == "text":
                     text = block.text
                     break
-            return _strip_json("{" + text)
+            if not text.strip():
+                raise ValueError("réponse vision vide")
+            return _strip_json(text)
         except Exception as e:  # réponse vide / JSON invalide → on réessaie
             last_err = e
     raise last_err
