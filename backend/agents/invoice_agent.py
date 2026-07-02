@@ -107,9 +107,25 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, format EXACT :
   "notes": "..."
 }}"""})
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        messages=[{"role": "user", "content": content}],
-    )
-    return _strip_json(message.content[0].text)
+    # Prefill "{" pour forcer une sortie JSON immédiate (évite prose / réponse vide),
+    # + retry : les modèles vision renvoient parfois un texte vide de façon transitoire.
+    last_err = None
+    for _attempt in range(3):
+        try:
+            message = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=2000,
+                messages=[
+                    {"role": "user", "content": content},
+                    {"role": "assistant", "content": "{"},
+                ],
+            )
+            text = ""
+            for block in (message.content or []):
+                if getattr(block, "type", None) == "text":
+                    text = block.text
+                    break
+            return _strip_json("{" + text)
+        except Exception as e:  # réponse vide / JSON invalide → on réessaie
+            last_err = e
+    raise last_err
