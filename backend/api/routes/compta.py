@@ -9,6 +9,7 @@ from models.compta import (
     MonthlyPnL, TvaBreakdown, SupplierBreakdown, CategoryBreakdown,
     ChargeFixe, ChargeFixeCreate,
 )
+from models.facture import BOOKED_STATUSES
 from models.revenue import aggregate_revenue_for_range
 from supabase import create_client
 from calendar import monthrange
@@ -61,11 +62,15 @@ async def monthly_pnl(
         agg = aggregate_revenue_for_range(rev_entries, month_start, month_end)
         revenue_ht = agg["revenue_ht"]
 
-    # Fetch supplier invoices for this month
+    # Fetch supplier invoices for this month.
+    # Seules les factures COMPTABILISÉES entrent dans le bilan : on exclut
+    # 'pending' (à comptabiliser) et 'disputed' (litige) — cohérent avec la TVA
+    # réellement déclarée, qui ne porte que sur les factures validées.
     invoices = (
         supabase.table("supplier_invoices")
         .select("*, supplier_invoice_lines(*)")
         .eq("restaurant_id", str(restaurant_id))
+        .in_("status", list(BOOKED_STATUSES))
         .gte("invoice_date", month_start.isoformat())
         .lte("invoice_date", month_end.isoformat())
         .execute()

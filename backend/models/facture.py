@@ -4,6 +4,13 @@ from datetime import date, datetime
 from uuid import UUID
 
 
+# Statuts "comptabilisés" : seules ces factures entrent dans le bilan de l'app
+# (résultat, TVA, postes, fournisseurs, dashboard). Les 'pending' (à comptabiliser)
+# et 'disputed' (litige) sont exclues des chiffres tant qu'elles ne sont pas validées.
+# 'paid' est un statut hérité (import Tablo) traité comme comptabilisé, plus jamais écrit.
+BOOKED_STATUSES = ("validated", "paid")
+
+
 # =====================
 # SUPPLIER INVOICE (facture fournisseur)
 # =====================

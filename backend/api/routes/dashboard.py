@@ -6,6 +6,7 @@ from calendar import monthrange
 from core.config import settings
 from core.auth import get_current_user, verify_restaurant_owner
 from models.revenue import aggregate_revenue_for_range
+from models.facture import BOOKED_STATUSES
 from supabase import create_client
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -58,10 +59,14 @@ async def dashboard_summary(
         .data
     )
 
-    purchases_ht = sum(float(inv.get("total_ht") or 0) for inv in invoices)
-    purchases_ttc = sum(float(inv.get("total_ttc") or 0) for inv in invoices)
-    invoice_count = len(invoices)
+    # Seules les factures comptabilisées comptent dans les montants du bilan.
+    # 'invoices' reste la liste complète du mois pour signaler les "à comptabiliser".
+    booked = [inv for inv in invoices if inv.get("status") in BOOKED_STATUSES]
     pending_count = sum(1 for inv in invoices if inv["status"] == "pending")
+
+    purchases_ht = sum(float(inv.get("total_ht") or 0) for inv in booked)
+    purchases_ttc = sum(float(inv.get("total_ttc") or 0) for inv in booked)
+    invoice_count = len(booked)
 
     # --- Stock items count + alerts ---
     stock_items = (
@@ -98,7 +103,7 @@ async def dashboard_summary(
         week_start = week_end - timedelta(days=6)
         week_total = sum(
             float(inv.get("total_ht") or 0)
-            for inv in invoices
+            for inv in booked
             if week_start.isoformat() <= inv["invoice_date"] <= week_end.isoformat()
         )
         week_num = week_start.isocalendar()[1]
@@ -106,7 +111,7 @@ async def dashboard_summary(
 
     # --- Top suppliers this month ---
     supplier_totals: dict[str, float] = {}
-    for inv in invoices:
+    for inv in booked:
         name = inv.get("supplier_name", "Inconnu")
         supplier_totals[name] = supplier_totals.get(name, 0) + float(inv.get("total_ht") or 0)
     top_suppliers = sorted(
@@ -116,8 +121,8 @@ async def dashboard_summary(
     )[:5]
 
     # Marge brute = CA − matières uniquement ; résultat net déduit aussi les charges d'exploitation.
-    matieres_ht = sum(float(inv.get("total_ht") or 0) for inv in invoices if (inv.get("category") or "matieres") == "matieres")
-    exploitation_ht = sum(float(inv.get("total_ht") or 0) for inv in invoices if inv.get("category") == "exploitation")
+    matieres_ht = sum(float(inv.get("total_ht") or 0) for inv in booked if (inv.get("category") or "matieres") == "matieres")
+    exploitation_ht = sum(float(inv.get("total_ht") or 0) for inv in booked if inv.get("category") == "exploitation")
     gross_margin = revenue_ht - matieres_ht
     margin_pct = (gross_margin / revenue_ht * 100) if revenue_ht > 0 else 0
     net_result = gross_margin - exploitation_ht - fixed_charges
