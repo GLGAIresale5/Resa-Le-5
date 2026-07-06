@@ -166,6 +166,7 @@ async def create_invoice(
         "consignes": consignes,
         "deconsignes": deconsignes,
         "category": body.category,
+        "compte_comptable": body.compte_comptable,
         "notes": body.notes,
     }
     inv = supabase.table("supplier_invoices").insert(inv_data).execute().data[0]
@@ -289,7 +290,8 @@ async def ingest_invoice(
         "invoice_number": number, "invoice_date": date_iso, "due_date": due_iso,
         "total_ht": ht, "total_tva": tva, "total_ttc": net,
         "consignes": consignes, "deconsignes": deconsignes,
-        "status": "pending", "category": p.get("category", "matieres"), "notes": note,
+        "status": "pending", "category": p.get("category", "matieres"),
+        "compte_comptable": p.get("compte_comptable"), "notes": note,
     }).execute().data[0]
     for l in lines:
         supabase.table("supplier_invoice_lines").insert({
@@ -302,6 +304,7 @@ async def ingest_invoice(
     return InvoiceIngestResult(
         status=status, doc_type=doc_type, invoice_id=inv["id"], supplier_name=supplier,
         invoice_number=number, invoice_date=date_iso, category=p.get("category"),
+        compte_comptable=p.get("compte_comptable"),
         total_ttc=net, consignes=consignes, deconsignes=deconsignes,
         confidence=conf, filing_path=folder, filing_filename=filing_name,
         message="Insérée en statut à valider." + (" Confiance faible → à revérifier." if conf == "low" else ""))

@@ -91,6 +91,14 @@ def parse_invoice(images_base64: list[str], filename_hint: str = "") -> dict:
 - payment_terms_days : délai de règlement en jours si mentionné (« prélèvement 30 jours » → 30), sinon null.
 - due_date : date d'échéance / de prélèvement au format YYYY-MM-DD si imprimée, sinon null.
 - category selon la grille ci-dessous ET le contenu réel des articles.
+- compte_comptable : n° de compte PCG (string) le plus adapté au CONTENU DOMINANT, selon ce plan Le 5 :
+    · denrées alimentaires (Métro, Viandes du Lys, Pétrin, alimentaire) → "601"
+    · boissons revendues au bar (Milliet, sodas, alcools) → "607"
+    · eau/électricité/gaz → "6061" · entretien/petit matériel → "6063" · loyer → "613"
+    · assurance → "616" · expert-comptable → "6226" · publicité → "623" · téléphone/internet → "626"
+    · frais bancaires → "627" · SACEM/SPRE → "651" · carburant/perso/vêtements → "455"
+    · équipement DURABLE > 500 € → immobilisation ("2154" matériel, "2184" mobilier, "2183" informatique)
+  En cas de doute, renvoie le compte de la famille la plus probable, jamais null si supplier_charge.
 - payment_status : "paid" si payé (cash/CB/mention réglé), sinon "pending".
 - short_label : 2–4 mots décrivant l'achat (ex. "carburant SP98", "petit matériel", "viandes") — sert au nommage du fichier.
 - confidence : "high" | "medium" | "low".
@@ -105,6 +113,7 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, format EXACT :
   "invoice_number": "... ou null",
   "invoice_date": "YYYY-MM-DD ou null",
   "category": "matieres | exploitation | equipement | hors_resto",
+  "compte_comptable": "601 | 607 | 6061 | 613 | ...",
   "tva_lines": [{{"base_ht": 0.0, "tva_rate": 20, "label": "..."}}],
   "total_ht": 0.0, "total_tva": 0.0, "total_ttc": 0.0,
   "consignes": 0.0, "deconsignes": 0.0, "net_a_payer": 0.0,

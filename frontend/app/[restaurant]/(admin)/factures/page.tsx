@@ -6,10 +6,12 @@ import {
   fetchInvoices,
   createInvoice,
   updateInvoiceStatus,
+  updateInvoice,
   deleteInvoice,
 } from "../../../lib/api";
 import { SupplierInvoice, InvoiceStatus, InvoiceCategory } from "../../../types";
 import CopyAmount from "../../../components/CopyAmount";
+import CompteComptableField from "../../../components/CompteComptableField";
 
 const CATEGORIES: { value: InvoiceCategory; label: string }[] = [
   { value: "matieres", label: "Matières premières" },
@@ -272,6 +274,17 @@ export default function FacturesPage() {
     try {
       await updateInvoiceStatus(invoiceId, restaurantId, newStatus);
       loadInvoices();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const saveCompte = async (invoiceId: string, compte: string) => {
+    if (!restaurantId) return;
+    // Optimiste : on met à jour l'état local sans recharger toute la liste.
+    setInvoices((prev) => prev.map((i) => (i.id === invoiceId ? { ...i, compte_comptable: compte } : i)));
+    try {
+      await updateInvoice(invoiceId, restaurantId, { compte_comptable: compte });
     } catch (e) {
       console.error(e);
     }
@@ -549,6 +562,14 @@ export default function FacturesPage() {
                                 </span>
                               </span>
                             )}
+                          </div>
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className="text-neutral-400">Compte comptable :</span>
+                            <CompteComptableField
+                              value={inv.compte_comptable}
+                              onSave={(v) => saveCompte(inv.id, v)}
+                            />
+                            <span className="text-[10px] text-neutral-500">suggéré, modifiable</span>
                           </div>
                           <div className="flex flex-col gap-1">
                             <p className="text-[10px] text-neutral-500">Cliquez un montant pour le copier.</p>

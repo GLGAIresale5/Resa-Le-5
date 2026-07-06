@@ -662,6 +662,18 @@ export async function updateInvoiceStatus(
   if (!res.ok) throw new Error("Erreur changement statut");
 }
 
+export async function updateInvoice(
+  invoiceId: string,
+  restaurantId: string,
+  patch: { compte_comptable?: string; category?: string; notes?: string }
+): Promise<void> {
+  const res = await authFetch(
+    `${API_URL}/factures/${invoiceId}?restaurant_id=${restaurantId}`,
+    { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) }
+  );
+  if (!res.ok) throw new Error("Erreur mise à jour facture");
+}
+
 export async function deleteInvoice(invoiceId: string, restaurantId: string): Promise<void> {
   const res = await authFetch(
     `${API_URL}/factures/${invoiceId}?restaurant_id=${restaurantId}`,

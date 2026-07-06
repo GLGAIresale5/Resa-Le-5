@@ -45,6 +45,7 @@ class SupplierInvoice(BaseModel):
     deconsignes: float = 0      # retours de consignes crédités (magnitude +, appliqués en −)
     status: str = "pending"  # 'pending' | 'validated' | 'paid' | 'disputed'
     category: str = "matieres"  # 'matieres' | 'exploitation' | 'equipement' | 'hors_resto'
+    compte_comptable: Optional[str] = None  # n° de compte PCG suggéré/affecté (ex. 601, 607)
     notes: Optional[str] = None
     lines: List[SupplierInvoiceLine] = []
     created_at: Optional[datetime] = None
@@ -70,6 +71,7 @@ class SupplierInvoiceCreate(BaseModel):
     category: str = "matieres"
     consignes: float = 0
     deconsignes: float = 0
+    compte_comptable: Optional[str] = None
     notes: Optional[str] = None
     lines: List[InvoiceLineCreate] = []
 
@@ -84,6 +86,7 @@ class SupplierInvoiceUpdate(BaseModel):
     category: Optional[str] = None
     consignes: Optional[float] = None
     deconsignes: Optional[float] = None
+    compte_comptable: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -115,6 +118,7 @@ class InvoiceIngestResult(BaseModel):
     invoice_number: Optional[str] = None
     invoice_date: Optional[str] = None
     category: Optional[str] = None
+    compte_comptable: Optional[str] = None
     total_ttc: Optional[float] = None  # net à payer inséré
     consignes: Optional[float] = None
     deconsignes: Optional[float] = None

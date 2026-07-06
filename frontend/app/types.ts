@@ -286,6 +286,7 @@ export interface SupplierInvoice {
   total_ttc: number; // net à payer (ce qui est prélevé)
   consignes?: number;
   deconsignes?: number;
+  compte_comptable?: string;
   status: InvoiceStatus;
   category: InvoiceCategory;
   notes?: string;
