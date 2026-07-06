@@ -9,6 +9,7 @@ import {
   deleteInvoice,
 } from "../../../lib/api";
 import { SupplierInvoice, InvoiceStatus, InvoiceCategory } from "../../../types";
+import CopyAmount from "../../../components/CopyAmount";
 
 const CATEGORIES: { value: InvoiceCategory; label: string }[] = [
   { value: "matieres", label: "Matières premières" },
@@ -55,6 +56,16 @@ function matchView(status: InvoiceStatus, view: View): boolean {
   if (view === "a_comptabiliser") return status === "pending";
   if (view === "litiges") return status === "disputed";
   return BOOKED.includes(status); // comptabilisees
+}
+
+// Base HT ventilée par taux de TVA (5,5 % / 20 %…) — c'est ce qu'on recopie en compta.
+function htByRate(inv: SupplierInvoice): [number, number][] {
+  const m = new Map<number, number>();
+  for (const l of inv.lines) {
+    const ht = l.total_ht ?? l.quantity * l.unit_price_ht;
+    m.set(l.tva_rate, Math.round(((m.get(l.tva_rate) ?? 0) + ht) * 100) / 100);
+  }
+  return [...m.entries()].sort((a, b) => a[0] - b[0]);
 }
 
 const TVA_RATES = [
@@ -540,33 +551,43 @@ export default function FacturesPage() {
                             )}
                           </div>
                           <div className="flex flex-col gap-1">
+                            <p className="text-[10px] text-neutral-500">Cliquez un montant pour le copier.</p>
+                            {/* Base HT ventilée par taux — ce qu'on recopie en compta */}
+                            {htByRate(inv).map(([rate, ht]) => (
+                              <div key={rate} className="flex justify-between">
+                                <span className="text-neutral-400">HT {rate.toLocaleString("fr-FR")} %</span>
+                                <CopyAmount value={ht} display={fmt(ht)} className="text-white" />
+                              </div>
+                            ))}
                             <div className="flex justify-between">
-                              <span className="text-neutral-400">Total HT</span>
-                              <span className="text-white">{fmt(inv.total_ht)}</span>
+                              <span className="text-neutral-500">
+                                Total HT <span className="text-[10px]">(vérif.)</span>
+                              </span>
+                              <CopyAmount value={inv.total_ht} display={fmt(inv.total_ht)} className="text-neutral-400" copyable={false} />
                             </div>
                             <div className="flex justify-between">
                               <span className="text-neutral-400">TVA</span>
-                              <span className="text-white">{fmt(inv.total_tva)}</span>
+                              <CopyAmount value={inv.total_tva} display={fmt(inv.total_tva)} className="text-white" />
                             </div>
                             <div className="flex justify-between">
                               <span className="text-neutral-400">Marchandises TTC</span>
-                              <span className="text-white">{fmt(inv.total_ht + inv.total_tva)}</span>
+                              <CopyAmount value={inv.total_ht + inv.total_tva} display={fmt(inv.total_ht + inv.total_tva)} className="text-white" />
                             </div>
                             {!!inv.consignes && (
                               <div className="flex justify-between">
                                 <span className="text-neutral-400">Consignes</span>
-                                <span className="text-white">+{fmt(inv.consignes)}</span>
+                                <CopyAmount value={inv.consignes} display={`+${fmt(inv.consignes)}`} className="text-white" />
                               </div>
                             )}
                             {!!inv.deconsignes && (
                               <div className="flex justify-between">
                                 <span className="text-neutral-400">Déconsignes</span>
-                                <span className="text-white">−{fmt(inv.deconsignes)}</span>
+                                <CopyAmount value={inv.deconsignes} display={`−${fmt(inv.deconsignes)}`} className="text-white" />
                               </div>
                             )}
                             <div className="mt-1 flex justify-between border-t border-neutral-800 pt-1.5">
                               <span className="font-medium text-white">Net à payer</span>
-                              <span className="font-semibold text-white">{fmt(inv.total_ttc)}</span>
+                              <CopyAmount value={inv.total_ttc} display={fmt(inv.total_ttc)} className="font-semibold text-white" />
                             </div>
                           </div>
                         </div>
