@@ -6,7 +6,7 @@ import { useAuth } from "../lib/auth-context";
 
 type NavItemDef =
   | { label: string; path: string; module: string; icon: React.ReactNode; soon?: boolean; children?: never }
-  | { label: string; module: string; icon: React.ReactNode; children: { label: string; path: string; module: string }[]; path?: never; soon?: never };
+  | { label: string; module: string; icon: React.ReactNode; path?: string; children: { label: string; path: string; module: string }[]; soon?: never };
 
 const navItemDefs: NavItemDef[] = [
   {
@@ -63,16 +63,6 @@ const navItemDefs: NavItemDef[] = [
     ],
   },
   {
-    label: "Factures",
-    path: "/factures",
-    module: "factures",
-    icon: (
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25h6m-6 3.75h6m-6 3.75h3M5.25 21h13.5a1.5 1.5 0 001.5-1.5V8.689c0-.398-.158-.78-.44-1.06l-4.69-4.689a1.5 1.5 0 00-1.06-.44H5.25a1.5 1.5 0 00-1.5 1.5v15a1.5 1.5 0 001.5 1.5z" />
-      </svg>
-    ),
-  },
-  {
     label: "Compta",
     path: "/compta",
     module: "compta",
@@ -81,6 +71,11 @@ const navItemDefs: NavItemDef[] = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6h7.5v2.25h-7.5V6zM8.25 11.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm2.748-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm2.754-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0012 2.25z" />
       </svg>
     ),
+    children: [
+      { label: "Factures", path: "/factures", module: "factures" },
+      { label: "Bilan", path: "/compta/bilan", module: "compta" },
+      { label: "TVA", path: "/compta/tva", module: "compta" },
+    ],
   },
 ];
 
@@ -106,7 +101,11 @@ export default function Sidebar() {
         const filteredChildren = modules
           ? item.children.filter((c) => modules.includes(c.module))
           : item.children;
-        return { ...item, children: filteredChildren.map((c) => ({ ...c, href: `/${slug}${c.path}` })) };
+        return {
+          ...item,
+          href: item.path ? `/${slug}${item.path}` : undefined,
+          children: filteredChildren.map((c) => ({ ...c, href: `/${slug}${c.path}` })),
+        };
       }
       return { ...item, href: `/${slug}${item.path}` };
     });
@@ -128,11 +127,14 @@ export default function Sidebar() {
       <nav className="flex flex-col gap-0.5 p-2 lg:p-3">
         {navItems.map((item) => {
           if (item.children) {
-            const isGroupActive = item.children.some((c) => pathname.startsWith(c.href));
+            const parentHref = item.href ?? item.children[0].href;
+            const isGroupActive =
+              (item.href ? pathname.startsWith(item.href) : false) ||
+              item.children.some((c) => pathname.startsWith(c.href));
             return (
               <div key={item.label}>
                 <Link
-                  href={item.children[0].href}
+                  href={parentHref}
                   className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition justify-center lg:justify-start ${
                     isGroupActive
                       ? "bg-neutral-900 text-white"

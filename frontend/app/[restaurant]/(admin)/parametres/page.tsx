@@ -3,8 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { useAuth } from "../../../lib/auth-context";
+import { fetchCharges, createCharge, deleteCharge } from "../../../lib/api";
+import { ChargeFixe, ChargeCategory } from "../../../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const CHARGE_CATEGORIES: { value: ChargeCategory; label: string }[] = [
+  { value: "salaires", label: "Salaires" },
+  { value: "loyer", label: "Loyer" },
+  { value: "assurance", label: "Assurance" },
+  { value: "energie", label: "Energie" },
+  { value: "divers", label: "Divers" },
+];
 
 interface OAuthStatus {
   google: { connected: boolean; location: string | null };
@@ -38,6 +48,43 @@ export default function ParametresPage() {
   const [toneLoaded, setToneLoaded] = useState(false);
   const [toneSaving, setToneSaving] = useState(false);
   const [toneSaved, setToneSaved] = useState(false);
+
+  // Charges fixes mensuelles (config compta)
+  const [charges, setCharges] = useState<ChargeFixe[]>([]);
+  const [newLabel, setNewLabel] = useState("");
+  const [newAmount, setNewAmount] = useState<number>(0);
+  const [newCategory, setNewCategory] = useState<ChargeCategory>("divers");
+
+  const fmtEur = (n: number) => n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+
+  const loadCharges = () => {
+    if (!RESTAURANT_ID) return;
+    fetchCharges(RESTAURANT_ID).then(setCharges).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadCharges();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [RESTAURANT_ID]);
+
+  const handleAddCharge = async () => {
+    if (!RESTAURANT_ID || !newLabel || newAmount <= 0) return;
+    try {
+      await createCharge({ restaurant_id: RESTAURANT_ID, label: newLabel, amount: newAmount, category: newCategory });
+      setNewLabel("");
+      setNewAmount(0);
+      setNewCategory("divers");
+      loadCharges();
+    } catch {}
+  };
+
+  const handleDeleteCharge = async (chargeId: string) => {
+    if (!RESTAURANT_ID) return;
+    try {
+      await deleteCharge(chargeId, RESTAURANT_ID);
+      loadCharges();
+    } catch {}
+  };
 
   // Load tone_profile from restaurant data
   useEffect(() => {
@@ -347,7 +394,7 @@ export default function ParametresPage() {
       <div className="mt-8">
         <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">Profil éditorial</h2>
         <p className="mt-1 text-xs text-neutral-400">
-          Définissez le ton, les hashtags et le style de vos posts réseaux sociaux. L'IA s'en servira comme guide.
+          Définissez le ton, les hashtags et le style de vos posts réseaux sociaux. L&apos;IA s&apos;en servira comme guide.
         </p>
         <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
           <textarea
@@ -370,6 +417,92 @@ export default function ParametresPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Charges fixes mensuelles */}
+      <div className="mt-8">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">Charges fixes mensuelles</h2>
+        <p className="mt-1 text-xs text-neutral-400">
+          Les charges récurrentes SANS facture à scanner (salaire, loyer). Elles sont déduites du résultat.
+          N&apos;y mettez PAS ce qui arrive déjà en facture (énergie, assurance…) pour éviter le double comptage.
+        </p>
+
+        <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+            <div>
+              <label className="block text-[10px] text-neutral-400 mb-0.5">Libelle</label>
+              <input
+                type="text"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder="Ex: Salaire Joao"
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-1.5 text-xs text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-neutral-400 mb-0.5">Montant mensuel</label>
+              <input
+                type="number"
+                step="0.01"
+                value={newAmount || ""}
+                onChange={(e) => setNewAmount(parseFloat(e.target.value) || 0)}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-1.5 text-xs text-white focus:border-neutral-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-neutral-400 mb-0.5">Categorie</label>
+              <select
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value as ChargeCategory)}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-1.5 text-xs text-white focus:border-neutral-500 focus:outline-none"
+              >
+                {CHARGE_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleAddCharge}
+              disabled={!newLabel || newAmount <= 0}
+              className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-neutral-200 transition disabled:opacity-40"
+            >
+              Ajouter
+            </button>
+          </div>
+        </div>
+
+        {charges.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2">
+            {CHARGE_CATEGORIES.map((cat) => {
+              const catCharges = charges.filter((c) => c.category === cat.value);
+              if (catCharges.length === 0) return null;
+              const catTotal = catCharges.reduce((s, c) => s + c.amount, 0);
+              return (
+                <div key={cat.value}>
+                  <div className="flex items-center justify-between px-1 py-1.5">
+                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">{cat.label}</span>
+                    <span className="text-xs text-white font-medium">{fmtEur(catTotal)}</span>
+                  </div>
+                  {catCharges.map((charge) => (
+                    <div key={charge.id} className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-3">
+                      <span className="flex-1 text-sm text-white">{charge.label}</span>
+                      <span className="text-sm font-medium text-white">{fmtEur(charge.amount)}</span>
+                      <button onClick={() => handleDeleteCharge(charge.id)} className="text-neutral-500 hover:text-red-300 transition">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            <div className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-950/60 px-4 py-3 mt-2">
+              <span className="text-sm font-medium text-white">Total charges fixes</span>
+              <span className="text-lg font-semibold text-white">{fmtEur(charges.reduce((s, c) => s + c.amount, 0))}/mois</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

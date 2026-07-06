@@ -90,6 +90,14 @@ export default function FacturesPage() {
   const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyRef = (id: string, ref: string) => {
+    navigator.clipboard?.writeText(ref).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1500);
+    }).catch(() => {});
+  };
 
   // Filtres (s'appliquent sur toutes les vues)
   const [search, setSearch] = useState("");
@@ -173,7 +181,9 @@ export default function FacturesPage() {
       }
       return true;
     });
-    const dir = view === "toutes" ? -1 : 1; // Toutes : plus récent en haut
+    // Archives (Comptabilisées, Toutes) = plus récent en haut ; files d'action
+    // (À comptabiliser, Litiges) = plus ancien en haut (on traite le plus vieux d'abord).
+    const dir = view === "toutes" || view === "comptabilisees" ? -1 : 1;
     list.sort((a, b) => {
       const d = a.invoice_date.localeCompare(b.invoice_date);
       if (d !== 0) return d * dir;
@@ -491,6 +501,28 @@ export default function FacturesPage() {
 
                         {/* Récap : dates + ventilation + net à payer */}
                         <div className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3 text-xs">
+                          {inv.invoice_number && (
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="text-neutral-400">Référence :</span>
+                              <span className="select-all font-mono text-white">{inv.invoice_number}</span>
+                              <button
+                                onClick={() => copyRef(inv.id, inv.invoice_number!)}
+                                className="inline-flex items-center gap-1 rounded-md border border-neutral-800 px-2 py-0.5 text-[10px] font-medium text-neutral-300 transition hover:border-neutral-600 hover:text-white"
+                                title="Copier la référence"
+                              >
+                                {copiedId === inv.id ? (
+                                  "Copié"
+                                ) : (
+                                  <>
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+                                    </svg>
+                                    Copier
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
                           <div className="mb-2 flex flex-wrap gap-x-6 gap-y-1">
                             <span className="text-neutral-400">
                               Date facture :{" "}
