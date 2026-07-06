@@ -145,9 +145,12 @@ async def create_invoice(
     await verify_restaurant_owner(user_id, str(body.restaurant_id))
     supabase = get_supabase()
 
-    # Compute totals from lines
+    # Totaux depuis les lignes = MARCHANDISES ; net à payer = + consignes − déconsignes.
     lines_data = [l.model_dump() for l in body.lines]
-    total_ht, total_tva, total_ttc = compute_totals(lines_data)
+    total_ht, total_tva, marchandises_ttc = compute_totals(lines_data)
+    consignes = round(float(body.consignes or 0), 2)
+    deconsignes = round(float(body.deconsignes or 0), 2)
+    net = round(marchandises_ttc + consignes - deconsignes, 2)
 
     # Insert invoice
     inv_data = {
@@ -159,7 +162,9 @@ async def create_invoice(
         "delivery_id": str(body.delivery_id) if body.delivery_id else None,
         "total_ht": total_ht,
         "total_tva": total_tva,
-        "total_ttc": total_ttc,
+        "total_ttc": net,
+        "consignes": consignes,
+        "deconsignes": deconsignes,
         "category": body.category,
         "notes": body.notes,
     }
@@ -237,31 +242,53 @@ async def ingest_invoice(
             message=f"Non reconnu comme facture d'achat exploitable ({p.get('notes') or 'données insuffisantes'}).")
 
     supabase = get_supabase()
-    ttc = round(float(p.get("total_ttc") or 0), 2)
+
+    # Montants : HT/TVA/TTC = MARCHANDISES (base TVA). Le net à payer (ce qui est prélevé) =
+    # TTC marchandises + consignes − déconsignes ; c'est LUI qu'on stocke en total_ttc (repère bancaire).
+    lines = p.get("tva_lines") or [{"base_ht": p.get("total_ht") or p.get("total_ttc") or 0, "tva_rate": 20, "label": supplier}]
+    ht = round(sum(float(l["base_ht"]) for l in lines), 2)
+    tva = round(sum(float(l["base_ht"]) * float(l["tva_rate"]) / 100 for l in lines), 2)
+    marchandises_ttc = round(ht + tva, 2)
+    consignes = round(float(p.get("consignes") or 0), 2)
+    deconsignes = round(float(p.get("deconsignes") or 0), 2)
+    net_ocr = round(float(p.get("net_a_payer") or 0), 2)
+    net = net_ocr if net_ocr > 0 else round(marchandises_ttc + consignes - deconsignes, 2)
+
+    # Date de prélèvement : due_date imprimée, sinon date facture + délai de règlement.
+    due_iso = None
+    raw_due = p.get("due_date")
+    if isinstance(raw_due, str) and raw_due.strip():
+        try:
+            due_iso = date.fromisoformat(raw_due.strip()).isoformat()
+        except ValueError:
+            due_iso = None
+    if not due_iso and p.get("payment_terms_days"):
+        try:
+            due_iso = (date.fromisoformat(date_iso) + timedelta(days=int(p["payment_terms_days"]))).isoformat()
+        except (ValueError, TypeError):
+            due_iso = None
+
     folder, filing_name = _filing_target(supplier, date_iso, number, p.get("short_label"))
 
-    dup = _find_duplicate(supabase, str(restaurant_id), supplier, date_iso, number, ttc)
+    dup = _find_duplicate(supabase, str(restaurant_id), supplier, date_iso, number, net)
     if dup:
         return InvoiceIngestResult(
             status="duplicate", doc_type=doc_type, supplier_name=supplier, invoice_number=number,
-            invoice_date=date_iso, total_ttc=ttc, confidence=conf, filing_path=folder, filing_filename=filing_name,
+            invoice_date=date_iso, total_ttc=net, consignes=consignes, deconsignes=deconsignes,
+            confidence=conf, filing_path=folder, filing_filename=filing_name,
             message=f"Doublon de {dup['supplier_name']} du {dup['invoice_date']} ({dup['total_ttc']} €). Non réinséré.")
 
-    # Ventilation TVA → lignes ; totaux recalculés, TTC imprimé prioritaire
-    lines = p.get("tva_lines") or [{"base_ht": p.get("total_ht") or ttc, "tva_rate": 20, "label": supplier}]
-    ht = round(sum(float(l["base_ht"]) for l in lines), 2)
-    tva = round(sum(float(l["base_ht"]) * float(l["tva_rate"]) / 100 for l in lines), 2)
-    ttc_final = ttc if ttc else round(ht + tva, 2)
     note = f"[ingest auto n8n | conf {conf} | paiement {p.get('payment_status')}]"
+    if consignes or deconsignes:
+        note += f" [marchandises {marchandises_ttc} · consignes +{consignes} · déconsignes -{deconsignes} → net {net}]"
     if p.get("notes"):
         note += f" {p['notes']}"
-    if abs(round(ht + tva, 2) - ttc_final) > 0.05:
-        note += f" [écart arrondi : calc {round(ht + tva, 2)} vs imprimé {ttc_final}]"
 
     inv = supabase.table("supplier_invoices").insert({
         "restaurant_id": str(restaurant_id), "supplier_name": supplier,
-        "invoice_number": number, "invoice_date": date_iso,
-        "total_ht": ht, "total_tva": tva, "total_ttc": ttc_final,
+        "invoice_number": number, "invoice_date": date_iso, "due_date": due_iso,
+        "total_ht": ht, "total_tva": tva, "total_ttc": net,
+        "consignes": consignes, "deconsignes": deconsignes,
         "status": "pending", "category": p.get("category", "matieres"), "notes": note,
     }).execute().data[0]
     for l in lines:
@@ -275,7 +302,8 @@ async def ingest_invoice(
     return InvoiceIngestResult(
         status=status, doc_type=doc_type, invoice_id=inv["id"], supplier_name=supplier,
         invoice_number=number, invoice_date=date_iso, category=p.get("category"),
-        total_ttc=ttc_final, confidence=conf, filing_path=folder, filing_filename=filing_name,
+        total_ttc=net, consignes=consignes, deconsignes=deconsignes,
+        confidence=conf, filing_path=folder, filing_filename=filing_name,
         message="Insérée en statut à valider." + (" Confiance faible → à revérifier." if conf == "low" else ""))
 
 

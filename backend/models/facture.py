@@ -40,7 +40,9 @@ class SupplierInvoice(BaseModel):
     delivery_id: Optional[UUID] = None
     total_ht: float = 0
     total_tva: float = 0
-    total_ttc: float = 0
+    total_ttc: float = 0  # NET À PAYER (ce qui est prélevé) = total_ht + total_tva + consignes − deconsignes
+    consignes: float = 0        # emballages consignés facturés (+), hors base TVA/matières
+    deconsignes: float = 0      # retours de consignes crédités (magnitude +, appliqués en −)
     status: str = "pending"  # 'pending' | 'validated' | 'paid' | 'disputed'
     category: str = "matieres"  # 'matieres' | 'exploitation' | 'equipement' | 'hors_resto'
     notes: Optional[str] = None
@@ -63,9 +65,11 @@ class SupplierInvoiceCreate(BaseModel):
     supplier_name: str
     invoice_number: Optional[str] = None
     invoice_date: date
-    due_date: Optional[date] = None
+    due_date: Optional[date] = None  # date de prélèvement / échéance
     delivery_id: Optional[UUID] = None
     category: str = "matieres"
+    consignes: float = 0
+    deconsignes: float = 0
     notes: Optional[str] = None
     lines: List[InvoiceLineCreate] = []
 
@@ -78,6 +82,8 @@ class SupplierInvoiceUpdate(BaseModel):
     delivery_id: Optional[UUID] = None
     status: Optional[str] = None
     category: Optional[str] = None
+    consignes: Optional[float] = None
+    deconsignes: Optional[float] = None
     notes: Optional[str] = None
 
 
@@ -109,7 +115,9 @@ class InvoiceIngestResult(BaseModel):
     invoice_number: Optional[str] = None
     invoice_date: Optional[str] = None
     category: Optional[str] = None
-    total_ttc: Optional[float] = None
+    total_ttc: Optional[float] = None  # net à payer inséré
+    consignes: Optional[float] = None
+    deconsignes: Optional[float] = None
     confidence: Optional[str] = None
     # Consigne de classement Mac (n8n exécute le déplacement) — chemin RELATIF à la racine compta.
     filing_path: Optional[str] = None       # ex. "Z Comptabilité 2026/6.FACTURE JUIN 2026"

@@ -103,6 +103,8 @@ export default function FacturesPage() {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState("");
   const [category, setCategory] = useState<InvoiceCategory>("matieres");
+  const [consignes, setConsignes] = useState(0);
+  const [deconsignes, setDeconsignes] = useState(0);
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<LineForm[]>([emptyLine()]);
   const [submitting, setSubmitting] = useState(false);
@@ -214,6 +216,8 @@ export default function FacturesPage() {
         invoice_date: invoiceDate,
         due_date: dueDate || undefined,
         category,
+        consignes: consignes || undefined,
+        deconsignes: deconsignes || undefined,
         notes: notes || undefined,
         lines: lines.map((l) => ({
           description: l.description,
@@ -229,6 +233,8 @@ export default function FacturesPage() {
       setInvoiceDate(new Date().toISOString().slice(0, 10));
       setDueDate("");
       setCategory("matieres");
+      setConsignes(0);
+      setDeconsignes(0);
       setNotes("");
       setLines([emptyLine()]);
       setTab("liste");
@@ -483,16 +489,54 @@ export default function FacturesPage() {
                           </div>
                         )}
 
-                        <div className="flex justify-end gap-4 text-xs">
-                          <span className="text-neutral-400">
-                            HT: <span className="font-medium text-white">{fmt(inv.total_ht)}</span>
-                          </span>
-                          <span className="text-neutral-400">
-                            TVA: <span className="font-medium text-white">{fmt(inv.total_tva)}</span>
-                          </span>
-                          <span className="text-neutral-400">
-                            TTC: <span className="font-semibold text-white">{fmt(inv.total_ttc)}</span>
-                          </span>
+                        {/* Récap : dates + ventilation + net à payer */}
+                        <div className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3 text-xs">
+                          <div className="mb-2 flex flex-wrap gap-x-6 gap-y-1">
+                            <span className="text-neutral-400">
+                              Date facture :{" "}
+                              <span className="text-white">
+                                {new Date(inv.invoice_date).toLocaleDateString("fr-FR")}
+                              </span>
+                            </span>
+                            {inv.due_date && (
+                              <span className="text-neutral-400">
+                                Prélèvement :{" "}
+                                <span className="text-white">
+                                  {new Date(inv.due_date).toLocaleDateString("fr-FR")}
+                                </span>
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex justify-between">
+                              <span className="text-neutral-400">Total HT</span>
+                              <span className="text-white">{fmt(inv.total_ht)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-neutral-400">TVA</span>
+                              <span className="text-white">{fmt(inv.total_tva)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-neutral-400">Marchandises TTC</span>
+                              <span className="text-white">{fmt(inv.total_ht + inv.total_tva)}</span>
+                            </div>
+                            {!!inv.consignes && (
+                              <div className="flex justify-between">
+                                <span className="text-neutral-400">Consignes</span>
+                                <span className="text-white">+{fmt(inv.consignes)}</span>
+                              </div>
+                            )}
+                            {!!inv.deconsignes && (
+                              <div className="flex justify-between">
+                                <span className="text-neutral-400">Déconsignes</span>
+                                <span className="text-white">−{fmt(inv.deconsignes)}</span>
+                              </div>
+                            )}
+                            <div className="mt-1 flex justify-between border-t border-neutral-800 pt-1.5">
+                              <span className="font-medium text-white">Net à payer</span>
+                              <span className="font-semibold text-white">{fmt(inv.total_ttc)}</span>
+                            </div>
+                          </div>
                         </div>
 
                         {inv.notes && <p className="text-xs italic text-neutral-400">{inv.notes}</p>}
@@ -574,7 +618,7 @@ export default function FacturesPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-neutral-400">Echeance</label>
+              <label className="mb-1 block text-xs text-neutral-400">Date de prélèvement</label>
               <input
                 type="date"
                 value={dueDate}
@@ -673,8 +717,34 @@ export default function FacturesPage() {
             </div>
           </div>
 
+          {/* Consignes / déconsignes (optionnel) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-neutral-400">Consignes (+)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={consignes || ""}
+                onChange={(e) => setConsignes(parseFloat(e.target.value) || 0)}
+                placeholder="0,00"
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-neutral-400">Déconsignes (−)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={deconsignes || ""}
+                onChange={(e) => setDeconsignes(parseFloat(e.target.value) || 0)}
+                placeholder="0,00"
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
           {/* Totals */}
-          <div className="flex justify-end gap-6 text-sm">
+          <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 text-sm">
             <span className="text-neutral-400">
               HT: <span className="font-medium text-white">{fmt(formTotalHT)}</span>
             </span>
@@ -682,7 +752,13 @@ export default function FacturesPage() {
               TVA: <span className="font-medium text-white">{fmt(formTotalTVA)}</span>
             </span>
             <span className="text-neutral-400">
-              TTC: <span className="text-base font-semibold text-white">{fmt(formTotalTTC)}</span>
+              Marchandises TTC: <span className="font-medium text-white">{fmt(formTotalTTC)}</span>
+            </span>
+            <span className="text-neutral-400">
+              Net à payer:{" "}
+              <span className="text-base font-semibold text-white">
+                {fmt(formTotalTTC + consignes - deconsignes)}
+              </span>
             </span>
           </div>
 

@@ -283,7 +283,9 @@ export interface SupplierInvoice {
   delivery_id?: string;
   total_ht: number;
   total_tva: number;
-  total_ttc: number;
+  total_ttc: number; // net à payer (ce qui est prélevé)
+  consignes?: number;
+  deconsignes?: number;
   status: InvoiceStatus;
   category: InvoiceCategory;
   notes?: string;

@@ -629,6 +629,8 @@ export async function createInvoice(data: {
   due_date?: string;
   delivery_id?: string;
   category?: string;
+  consignes?: number;
+  deconsignes?: number;
   notes?: string;
   lines: {
     description: string;

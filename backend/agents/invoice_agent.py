@@ -83,7 +83,13 @@ def parse_invoice(images_base64: list[str], filename_hint: str = "") -> dict:
 - invoice_date : date réelle au format YYYY-MM-DD.
 - tva_lines : ventilation par taux réel (5.5, 10, 20…). base_ht = base HORS TAXE à ce taux.
   Si seul le TTC est lisible, déduis le taux du type de produits et baisse la confiance.
-- total_ht, total_tva, total_ttc (cohérents : ht + tva = ttc à 0,02 près ; total_ttc = le montant imprimé).
+- total_ht, total_tva, total_ttc : TTC des MARCHANDISES (ht + tva = ttc à 0,02 près), AVANT consignes.
+- consignes : total des consignes facturées (emballages consignés, montant POSITIF ; 0 si absent).
+- deconsignes : total des déconsignes / retours de consignes (magnitude POSITIVE ; 0 si absent).
+- net_a_payer : le « NET À PAYER » réellement dû = total_ttc + consignes − deconsignes. Si le document
+  affiche un « NET À PAYER » distinct du total marchandises, reporte-le EXACTEMENT ici ; sinon = total_ttc.
+- payment_terms_days : délai de règlement en jours si mentionné (« prélèvement 30 jours » → 30), sinon null.
+- due_date : date d'échéance / de prélèvement au format YYYY-MM-DD si imprimée, sinon null.
 - category selon la grille ci-dessous ET le contenu réel des articles.
 - payment_status : "paid" si payé (cash/CB/mention réglé), sinon "pending".
 - short_label : 2–4 mots décrivant l'achat (ex. "carburant SP98", "petit matériel", "viandes") — sert au nommage du fichier.
@@ -101,6 +107,8 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, format EXACT :
   "category": "matieres | exploitation | equipement | hors_resto",
   "tva_lines": [{{"base_ht": 0.0, "tva_rate": 20, "label": "..."}}],
   "total_ht": 0.0, "total_tva": 0.0, "total_ttc": 0.0,
+  "consignes": 0.0, "deconsignes": 0.0, "net_a_payer": 0.0,
+  "payment_terms_days": null, "due_date": "YYYY-MM-DD ou null",
   "payment_status": "paid | pending",
   "short_label": "...",
   "confidence": "high | medium | low",
