@@ -1,12 +1,15 @@
 """Date de prélèvement bancaire des factures fournisseurs (règle métier Le 5).
 
 Source : les relevés bancaires de Baptiste — la réalité bancaire PRIME sur
-l'échéance imprimée sur la facture (ex. le « +15 j » imprimé sur les factures
-VDL n'existe pas en banque : VDL prélève le jour même).
+l'échéance imprimée sur la facture. Le prélèvement réel a souvent du décalage ;
+on retient la meilleure estimation par fournisseur.
 
 Règle :
 - Métro   → date de facture + 10 jours calendaires
 - Milliet → date de facture + 30 jours calendaires
+- VDL (Les Viandes du Lys) → date de facture + 15 jours calendaires
+  (rejoint l'échéance imprimée « +15 j » ; le prélèvement réel fluctue,
+  +15 j est la meilleure estimation)
 - tous les autres fournisseurs → jour de la facture
 puis report au jour ouvré suivant si la date tombe un samedi, un dimanche ou
 un jour férié français (métropole). S'applique aussi aux avoirs (montants
@@ -19,9 +22,12 @@ from datetime import date, timedelta
 # Délais de prélèvement par fournisseur (jours calendaires après la date de facture).
 # Matching par sous-chaîne sur le nom normalisé (minuscules, sans accents) :
 # "Métro Cash & Carry" → "metrocashcarry" contient "metro".
+# VDL a deux graphies OCR possibles : "Les Viandes du Lys" et le sigle "VDL".
 SUPPLIER_DEBIT_DELAYS: tuple[tuple[str, int], ...] = (
     ("metro", 10),
     ("milliet", 30),
+    ("viandesdulys", 15),
+    ("vdl", 15),
 )
 DEFAULT_DELAY_DAYS = 0  # tous les autres fournisseurs : prélevés le jour de la facture
 
@@ -73,15 +79,19 @@ def next_business_day(d: date) -> date:
     return d
 
 
+def supplier_delay_days(supplier_name: str) -> int:
+    """Délai de prélèvement (jours calendaires) applicable à un fournisseur."""
+    normalized = _normalize(supplier_name)
+    for token, days in SUPPLIER_DEBIT_DELAYS:
+        if token in normalized:
+            return days
+    return DEFAULT_DELAY_DAYS
+
+
 def compute_debit_date(supplier_name: str, invoice_date: date) -> date:
     """Date de prélèvement bancaire d'une facture fournisseur (avoirs inclus).
 
     PRIME sur l'échéance imprimée sur la facture / lue par l'OCR.
     """
-    normalized = _normalize(supplier_name)
-    delay = DEFAULT_DELAY_DAYS
-    for token, days in SUPPLIER_DEBIT_DELAYS:
-        if token in normalized:
-            delay = days
-            break
+    delay = supplier_delay_days(supplier_name)
     return next_business_day(invoice_date + timedelta(days=delay))

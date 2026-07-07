@@ -12,7 +12,7 @@ from models.facture import (
     InvoiceScanRequest, InvoiceScanResult, InvoiceIngestResult,
 )
 from agents.invoice_agent import parse_invoice, render_pdf_to_images
-from services.payment_terms import compute_debit_date
+from services.payment_terms import compute_debit_date, supplier_delay_days
 from supabase import create_client
 
 router = APIRouter(prefix="/factures", tags=["factures"])
@@ -260,14 +260,20 @@ async def ingest_invoice(
     net_ocr = round(float(p.get("net_a_payer") or 0), 2)
     net = net_ocr if net_ocr > 0 else round(marchandises_ttc + consignes - deconsignes, 2)
 
-    # Date de prélèvement : règle bancaire fournisseur (Métro +10 j, Milliet +30 j,
-    # autres = jour même, reporté au jour ouvré suivant). Elle PRIME sur l'échéance
-    # imprimée / lue par l'OCR — qui reste informative en note (ex. le « +15 j » VDL
-    # imprimé n'existe pas en banque).
+    # Date de prélèvement : règle bancaire fournisseur (Métro +10 j, VDL +15 j,
+    # Milliet +30 j, autres = jour même, reporté au jour ouvré suivant). Elle PRIME
+    # sur l'échéance imprimée / lue par l'OCR — qui reste informative en note quand
+    # elle diffère réellement (pas de note si le délai imprimé rejoint la règle,
+    # ex. le « +15 j » VDL = la règle appliquée).
     due_iso = compute_debit_date(supplier, date.fromisoformat(date_iso)).isoformat()
     ocr_due = (p.get("due_date") or "").strip() if isinstance(p.get("due_date"), str) else ""
     if not ocr_due and p.get("payment_terms_days"):
-        ocr_due = f"+{p['payment_terms_days']} j"
+        try:
+            printed_delay = int(p["payment_terms_days"])
+        except (TypeError, ValueError):
+            printed_delay = None
+        if printed_delay is not None and printed_delay != supplier_delay_days(supplier):
+            ocr_due = f"+{printed_delay} j"
 
     folder, filing_name = _filing_target(supplier, date_iso, number, p.get("short_label"))
 

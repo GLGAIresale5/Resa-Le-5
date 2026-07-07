@@ -7,7 +7,7 @@ from core.config import settings
 from core.auth import get_current_user, verify_restaurant_owner
 from models.compta import (
     MonthlyPnL, TvaBreakdown, SupplierBreakdown, CategoryBreakdown,
-    ChargeFixe, ChargeFixeCreate,
+    ChargeFixe, ChargeFixeCreate, ChargeFixeUpdate,
 )
 from models.facture import BOOKED_STATUSES
 from models.revenue import aggregate_revenue_for_range
@@ -203,31 +203,30 @@ async def create_charge(
     return data
 
 
-@router.patch("/charges/{charge_id}")
+@router.patch("/charges/{charge_id}", response_model=ChargeFixe)
 async def update_charge(
     charge_id: UUID,
+    body: ChargeFixeUpdate,
     restaurant_id: UUID = Query(...),
-    label: Optional[str] = None,
-    amount: Optional[float] = None,
-    category: Optional[str] = None,
-    notes: Optional[str] = None,
     user_id: str = Depends(get_current_user),
 ):
     await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
-    updates = {}
-    if label is not None:
-        updates["label"] = label
-    if amount is not None:
-        updates["amount"] = amount
-    if category is not None:
-        updates["category"] = category
-    if notes is not None:
-        updates["notes"] = notes
+    updates = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
     if not updates:
         raise HTTPException(400, "Aucune modification")
-    supabase.table("fixed_charges").update(updates).eq("id", str(charge_id)).execute()
-    return {"updated": True}
+    # Scopé sur le restaurant : impossible de modifier la charge d'un autre tenant.
+    data = (
+        supabase.table("fixed_charges")
+        .update(updates)
+        .eq("id", str(charge_id))
+        .eq("restaurant_id", str(restaurant_id))
+        .execute()
+        .data
+    )
+    if not data:
+        raise HTTPException(404, "Charge introuvable")
+    return data[0]
 
 
 @router.delete("/charges/{charge_id}")
@@ -238,5 +237,6 @@ async def delete_charge(
 ):
     await verify_restaurant_owner(user_id, str(restaurant_id))
     supabase = get_supabase()
-    supabase.table("fixed_charges").delete().eq("id", str(charge_id)).execute()
+    # Scopé sur le restaurant : impossible de supprimer la charge d'un autre tenant.
+    supabase.table("fixed_charges").delete().eq("id", str(charge_id)).eq("restaurant_id", str(restaurant_id)).execute()
     return {"deleted": True}

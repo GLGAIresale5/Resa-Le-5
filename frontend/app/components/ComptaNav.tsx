@@ -7,6 +7,7 @@ const TABS = [
   { label: "Aperçu", seg: "" },
   { label: "Bilan", seg: "bilan" },
   { label: "TVA", seg: "tva" },
+  { label: "Charges", seg: "charges" },
 ];
 
 export default function ComptaNav() {

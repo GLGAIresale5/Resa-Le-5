@@ -731,6 +731,23 @@ export async function createCharge(data: {
   return res.json();
 }
 
+export async function updateCharge(
+  chargeId: string,
+  restaurantId: string,
+  data: { label?: string; amount?: number; category?: string; notes?: string }
+): Promise<ChargeFixe> {
+  const res = await authFetch(
+    `${API_URL}/compta/charges/${chargeId}?restaurant_id=${restaurantId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }
+  );
+  if (!res.ok) throw new Error("Erreur modification charge");
+  return res.json();
+}
+
 export async function deleteCharge(chargeId: string, restaurantId: string): Promise<void> {
   const res = await authFetch(
     `${API_URL}/compta/charges/${chargeId}?restaurant_id=${restaurantId}`,

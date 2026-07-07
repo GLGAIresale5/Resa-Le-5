@@ -62,3 +62,10 @@ class ChargeFixeCreate(BaseModel):
     amount: float
     category: str = "divers"
     notes: Optional[str] = None
+
+
+class ChargeFixeUpdate(BaseModel):
+    label: Optional[str] = None
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    notes: Optional[str] = None

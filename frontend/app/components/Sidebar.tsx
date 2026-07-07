@@ -75,6 +75,7 @@ const navItemDefs: NavItemDef[] = [
       { label: "Factures", path: "/factures", module: "factures" },
       { label: "Bilan", path: "/compta/bilan", module: "compta" },
       { label: "TVA", path: "/compta/tva", module: "compta" },
+      { label: "Charges", path: "/compta/charges", module: "compta" },
     ],
   },
 ];
