@@ -12,6 +12,7 @@ from models.facture import (
     InvoiceScanRequest, InvoiceScanResult, InvoiceIngestResult,
 )
 from agents.invoice_agent import parse_invoice, render_pdf_to_images
+from services.payment_terms import compute_debit_date
 from supabase import create_client
 
 router = APIRouter(prefix="/factures", tags=["factures"])
@@ -152,13 +153,17 @@ async def create_invoice(
     deconsignes = round(float(body.deconsignes or 0), 2)
     net = round(marchandises_ttc + consignes - deconsignes, 2)
 
+    # Date de prélèvement : saisie explicite respectée (relevé bancaire), sinon
+    # règle bancaire fournisseur (Métro +10 j, Milliet +30 j, autres jour même, jour ouvré).
+    due = body.due_date or compute_debit_date(body.supplier_name, body.invoice_date)
+
     # Insert invoice
     inv_data = {
         "restaurant_id": str(body.restaurant_id),
         "supplier_name": body.supplier_name,
         "invoice_number": body.invoice_number,
         "invoice_date": str(body.invoice_date),
-        "due_date": str(body.due_date) if body.due_date else None,
+        "due_date": str(due),
         "delivery_id": str(body.delivery_id) if body.delivery_id else None,
         "total_ht": total_ht,
         "total_tva": total_tva,
@@ -255,19 +260,14 @@ async def ingest_invoice(
     net_ocr = round(float(p.get("net_a_payer") or 0), 2)
     net = net_ocr if net_ocr > 0 else round(marchandises_ttc + consignes - deconsignes, 2)
 
-    # Date de prélèvement : due_date imprimée, sinon date facture + délai de règlement.
-    due_iso = None
-    raw_due = p.get("due_date")
-    if isinstance(raw_due, str) and raw_due.strip():
-        try:
-            due_iso = date.fromisoformat(raw_due.strip()).isoformat()
-        except ValueError:
-            due_iso = None
-    if not due_iso and p.get("payment_terms_days"):
-        try:
-            due_iso = (date.fromisoformat(date_iso) + timedelta(days=int(p["payment_terms_days"]))).isoformat()
-        except (ValueError, TypeError):
-            due_iso = None
+    # Date de prélèvement : règle bancaire fournisseur (Métro +10 j, Milliet +30 j,
+    # autres = jour même, reporté au jour ouvré suivant). Elle PRIME sur l'échéance
+    # imprimée / lue par l'OCR — qui reste informative en note (ex. le « +15 j » VDL
+    # imprimé n'existe pas en banque).
+    due_iso = compute_debit_date(supplier, date.fromisoformat(date_iso)).isoformat()
+    ocr_due = (p.get("due_date") or "").strip() if isinstance(p.get("due_date"), str) else ""
+    if not ocr_due and p.get("payment_terms_days"):
+        ocr_due = f"+{p['payment_terms_days']} j"
 
     folder, filing_name = _filing_target(supplier, date_iso, number, p.get("short_label"))
 
@@ -280,6 +280,8 @@ async def ingest_invoice(
             message=f"Doublon de {dup['supplier_name']} du {dup['invoice_date']} ({dup['total_ttc']} €). Non réinséré.")
 
     note = f"[ingest auto n8n | conf {conf} | paiement {p.get('payment_status')}]"
+    if ocr_due and ocr_due != due_iso:
+        note += f" [échéance imprimée {ocr_due} → prélèvement réel {due_iso} (règle bancaire)]"
     if consignes or deconsignes:
         note += f" [marchandises {marchandises_ttc} · consignes +{consignes} · déconsignes -{deconsignes} → net {net}]"
     if p.get("notes"):
@@ -334,6 +336,20 @@ async def update_invoice(
 
     if not updates:
         raise HTTPException(400, "Aucune modification")
+
+    # Si la date de facture ou le fournisseur change sans due_date explicite,
+    # on recalcule la date de prélèvement selon la règle bancaire fournisseur.
+    if "due_date" not in updates and ("invoice_date" in updates or "supplier_name" in updates):
+        current = (
+            supabase.table("supplier_invoices")
+            .select("supplier_name, invoice_date")
+            .eq("id", str(invoice_id)).eq("restaurant_id", str(restaurant_id))
+            .single().execute().data
+        )
+        if current:
+            supplier = updates.get("supplier_name") or current["supplier_name"]
+            inv_date = date.fromisoformat(str(updates.get("invoice_date") or current["invoice_date"]))
+            updates["due_date"] = compute_debit_date(supplier, inv_date).isoformat()
 
     supabase.table("supplier_invoices").update(updates).eq("id", str(invoice_id)).eq("restaurant_id", str(restaurant_id)).execute()
 

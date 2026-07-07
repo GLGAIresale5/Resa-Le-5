@@ -1,6 +1,6 @@
 // Service Worker for GLG AI — Push Notifications + Auto-update
 // Change this version string on each deploy to trigger an update
-const SW_VERSION = "2026-07-06-compte-comptable";
+const SW_VERSION = "2026-07-07-tri-prelevement";
 
 self.addEventListener("install", (event) => {
   // Activate immediately — don't wait for old SW to stop

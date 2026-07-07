@@ -194,11 +194,13 @@ export default function FacturesPage() {
       }
       return true;
     });
+    // Tri par date de PRÉLÈVEMENT (réalité bancaire), fallback date de facture.
     // Archives (Comptabilisées, Toutes) = plus récent en haut ; files d'action
     // (À comptabiliser, Litiges) = plus ancien en haut (on traite le plus vieux d'abord).
     const dir = view === "toutes" || view === "comptabilisees" ? -1 : 1;
+    const sortKey = (i: SupplierInvoice) => i.due_date ?? i.invoice_date;
     list.sort((a, b) => {
-      const d = a.invoice_date.localeCompare(b.invoice_date);
+      const d = sortKey(a).localeCompare(sortKey(b));
       if (d !== 0) return d * dir;
       return (a.created_at ?? "").localeCompare(b.created_at ?? "") * dir;
     });
@@ -428,7 +430,9 @@ export default function FacturesPage() {
                 <span className="text-white">{fmt(sumHT)}</span> HT · {fmt(sumTTC)} TTC
               </span>
               <span className="hidden text-[11px] text-neutral-500 sm:inline">
-                {view === "toutes" ? "Plus récentes en haut" : "Plus anciennes en haut, récentes en bas"}
+                {view === "toutes" || view === "comptabilisees"
+                  ? "Tri par prélèvement — plus récentes en haut"
+                  : "Tri par prélèvement — plus anciennes en haut"}
               </span>
             </div>
           )}
@@ -463,7 +467,8 @@ export default function FacturesPage() {
                           )}
                         </div>
                         <div className="mt-0.5 text-xs text-neutral-400">
-                          {new Date(inv.invoice_date).toLocaleDateString("fr-FR")}
+                          Prélèvement{" "}
+                          {new Date(inv.due_date ?? inv.invoice_date).toLocaleDateString("fr-FR")}
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
@@ -699,6 +704,9 @@ export default function FacturesPage() {
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-white focus:border-neutral-500 focus:outline-none"
               />
+              <p className="mt-1 text-[10px] text-neutral-500">
+                Vide = calculée auto (Métro +10 j, Milliet +30 j, autres jour même, jour ouvré).
+              </p>
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs text-neutral-400">Catégorie de dépense</label>
