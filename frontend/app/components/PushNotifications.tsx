@@ -75,5 +75,25 @@ export default function PushNotifications() {
     })();
   }, [restaurant?.id, session?.access_token]);
 
+  // Clear the app-icon badge whenever the back-office is opened or brought to the
+  // foreground. The service worker sets a red badge on each new reservation ; opening
+  // the app means the owner has seen it, so we dismiss it here (not only on notif tap).
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    const nav = navigator as Navigator & { clearAppBadge?: () => Promise<void> };
+    if (typeof nav.clearAppBadge !== "function") return;
+
+    const clear = () => {
+      nav.clearAppBadge?.().catch(() => {});
+    };
+
+    clear(); // app just opened
+    const onVisible = () => {
+      if (document.visibilityState === "visible") clear();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
   return null;
 }

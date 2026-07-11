@@ -1,6 +1,6 @@
 // Service Worker for GLG AI — Push Notifications + Auto-update
 // Change this version string on each deploy to trigger an update
-const SW_VERSION = "2026-07-11-push-resa";
+const SW_VERSION = "2026-07-11-badge-resa";
 
 self.addEventListener("install", (event) => {
   // Activate immediately — don't wait for old SW to stop
@@ -42,9 +42,10 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     self.registration.showNotification(data.title || "GLG AI", options).then(() => {
-      // Set app badge (red dot with count on app icon)
+      // Set a red badge on the app icon. iOS needs an explicit numeric value —
+      // setAppBadge() with no argument is unreliable and often shows nothing.
       if (self.navigator && self.navigator.setAppBadge) {
-        self.navigator.setAppBadge();
+        self.navigator.setAppBadge(1);
       }
     })
   );
