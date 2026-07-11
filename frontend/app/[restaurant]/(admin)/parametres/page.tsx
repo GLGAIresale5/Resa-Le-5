@@ -118,7 +118,10 @@ export default function ParametresPage() {
         if (subscription) {
           await fetch(`${API_URL}/push/unsubscribe`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.access_token ?? ""}`,
+            },
             body: JSON.stringify({ endpoint: subscription.endpoint }),
           });
           await subscription.unsubscribe();
@@ -131,6 +134,7 @@ export default function ParametresPage() {
     }
 
     // Subscribe
+    if (!session?.access_token || !RESTAURANT_ID) return;
     setSubscribing(true);
     try {
       // Check current permission — if already granted, skip the prompt
@@ -158,7 +162,10 @@ export default function ParametresPage() {
       const subJson = subscription.toJSON();
       await fetch(`${API_URL}/push/subscribe?restaurant_id=${RESTAURANT_ID}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           endpoint: subJson.endpoint,
           p256dh: subJson.keys?.p256dh ?? "",

@@ -21,11 +21,11 @@ function urlBase64ToUint8Array(base64String: string) {
  * The actual permission prompt is handled in /parametres.
  */
 export default function PushNotifications() {
-  const { restaurant } = useAuth();
+  const { restaurant, session } = useAuth();
 
   useEffect(() => {
-    // Wait until restaurant context is loaded
-    if (!restaurant?.id) return;
+    // Wait until restaurant context + session are loaded
+    if (!restaurant?.id || !session?.access_token) return;
 
     if (
       typeof window === "undefined" ||
@@ -58,7 +58,10 @@ export default function PushNotifications() {
         const subJson = subscription.toJSON();
         await fetch(`${API_URL}/push/subscribe?restaurant_id=${restaurant.id}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({
             endpoint: subJson.endpoint,
             p256dh: subJson.keys?.p256dh ?? "",
@@ -70,7 +73,7 @@ export default function PushNotifications() {
         console.error("[Push] Auto-subscribe error:", err);
       }
     })();
-  }, [restaurant?.id]);
+  }, [restaurant?.id, session?.access_token]);
 
   return null;
 }

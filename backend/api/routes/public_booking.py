@@ -210,15 +210,18 @@ async def public_book(
     except Exception:
         pass
 
-    # Send push notification to admin
-    full_name_display = f"{body.guest_first_name} {body.guest_last_name}".strip()
-    date_str = body.date.strftime("%d/%m/%Y")
-    send_push_to_restaurant(
-        restaurant_id=rest_id,
-        title=f"Nouvelle réservation — {full_name_display}",
-        body=f"{body.guest_count} pers. le {date_str} à {body.time}. Confirmée automatiquement.",
-        url="/reservations",
-    )
+    # Send push notification to admin (best-effort — never fail the booking on a push error)
+    try:
+        full_name_display = f"{body.guest_first_name} {body.guest_last_name}".strip()
+        date_str = body.date.strftime("%d/%m/%Y")
+        send_push_to_restaurant(
+            restaurant_id=rest_id,
+            title=f"Nouvelle réservation — {full_name_display}",
+            body=f"{body.guest_count} pers. le {date_str} à {body.time}. Confirmée automatiquement.",
+            url="/reservations",
+        )
+    except Exception:
+        pass
 
     return PublicBookingResponse(
         status="confirmed",

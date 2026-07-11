@@ -26,8 +26,13 @@ class PushSubscription(BaseModel):
 
 
 @router.get("/vapid-public-key")
-async def get_vapid_public_key(user_id: str = Depends(get_current_user)):
-    """Return the VAPID public key for frontend subscription."""
+async def get_vapid_public_key():
+    """Return the VAPID public key for frontend subscription.
+
+    Public by design: the VAPID public key is the applicationServerKey embedded
+    in every browser push subscription — it is not a secret. Left unauthenticated
+    so the subscribe flow can fetch it (the private key alone stays server-side).
+    """
     return {"publicKey": settings.vapid_public_key}
 
 
