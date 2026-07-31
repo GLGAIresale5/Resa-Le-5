@@ -12,6 +12,7 @@ import ServiceWorkerUpdater from "../../components/ServiceWorkerUpdater";
 const ROUTE_TO_MODULE: Record<string, string> = {
   dashboard: "dashboard",
   reservations: "reservations",
+  loterie: "loterie",
   avis: "avis",
   reseaux: "reseaux",
   stocks: "stocks",

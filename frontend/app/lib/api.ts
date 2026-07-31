@@ -768,3 +768,76 @@ export async function fetchDashboardSummary(
   if (!res.ok) throw new Error("Erreur chargement dashboard");
   return res.json();
 }
+
+// --- Loterie « La Chance du 5 » ---
+
+export interface LotteryPlay {
+  id: string;
+  first_name: string;
+  phone: string;
+  prize: string;
+  prize_label: string;
+  is_alcohol: boolean;
+  status: "none" | "pending" | "claimed" | "expired";
+  expires_at: string | null;
+  claimed_at: string | null;
+  created_at: string;
+  is_expired: boolean;
+}
+
+export interface LotteryStats {
+  month: string;
+  plays: number;
+  wins: number;
+  by_prize: Record<string, number>;
+  cost_max: number;
+  cost_claimed: number;
+  gros_lot_used: number;
+  gros_lot_cap: number;
+  marketing_contacts: number;
+}
+
+export async function fetchLotteryPlays(restaurantId: string): Promise<LotteryPlay[]> {
+  const res = await authFetch(`${API_URL}/lottery/plays?restaurant_id=${restaurantId}`);
+  if (!res.ok) throw new Error("Erreur chargement des participations");
+  const data = await res.json();
+  return data.plays || [];
+}
+
+export async function fetchLotteryStats(restaurantId: string): Promise<LotteryStats> {
+  const res = await authFetch(`${API_URL}/lottery/stats?restaurant_id=${restaurantId}`);
+  if (!res.ok) throw new Error("Erreur chargement des statistiques");
+  return res.json();
+}
+
+export async function claimLotteryPlay(
+  playId: string,
+  restaurantId: string
+): Promise<LotteryPlay> {
+  const res = await authFetch(`${API_URL}/lottery/plays/${playId}/claim`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ restaurant_id: restaurantId }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail || "Erreur lors de la remise du lot");
+  }
+  return res.json();
+}
+
+export async function eraseLotteryPerson(
+  phone: string,
+  restaurantId: string
+): Promise<{ plays_deleted: number; contacts_deleted: number }> {
+  const res = await authFetch(`${API_URL}/lottery/erase`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ restaurant_id: restaurantId, phone }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail || "Erreur lors de l'effacement");
+  }
+  return res.json();
+}

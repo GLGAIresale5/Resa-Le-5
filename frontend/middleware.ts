@@ -18,7 +18,10 @@ function isSiteRoute(pathname: string): boolean {
 }
 
 function isAppRoute(pathname: string): boolean {
-  return APP_PREFIXES.some((p) => pathname.startsWith(p)) || /^\/[a-z0-9-]+\/(avis|reservations|reseaux|stocks|stocks-cuisine|parametres|login|register)/.test(pathname);
+  // NB : "loterie" = page back-office (à bloquer sur le domaine du site).
+  // "jeu" est volontairement ABSENT : c'est la page publique scannée au QR,
+  // elle doit rester accessible sur le-5.vercel.app.
+  return APP_PREFIXES.some((p) => pathname.startsWith(p)) || /^\/[a-z0-9-]+\/(avis|reservations|loterie|reseaux|stocks|stocks-cuisine|parametres|login|register)/.test(pathname);
 }
 
 export function middleware(request: NextRequest) {

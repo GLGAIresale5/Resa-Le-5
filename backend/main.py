@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes import reviews, posts, reservations, stocks
 from api.routes import google_reviews, meta_publish, public_booking, push, auth, oauth, contact
 from api.routes import dashboard, compta, factures, revenue  # finances (rapatrié de Tablo)
+from api.routes import lottery, public_lottery  # loterie « La Chance du 5 »
 
 app = FastAPI(
     title="GLG AI API",
@@ -45,6 +46,9 @@ app.include_router(dashboard.router)
 app.include_router(compta.router)
 app.include_router(factures.router)
 app.include_router(revenue.router)
+# Loterie — prefix /lottery déclaré dans chaque router (public + back-office)
+app.include_router(public_lottery.router)
+app.include_router(lottery.router)
 
 
 @app.get("/")
